@@ -30,7 +30,7 @@ uint64_t GearTableBuilder::ParseFromDataPack(const Slice &data_pack, uint32_t *l
  num_of_blocks = 0;
  const char *data_byte_array = data_pack.data();
  uint32_t page_entry_count;
- for (size_t i = 0; i < data_pack.size(); i += 8 * 1024) {
+ for (size_t i = 0; i < data_pack.size(); i += BLOCK_SIZE) {
   // iterate from the first byte
   Slice temp(data_byte_array + i, BLOCK_SIZE);
   // get the entry count from the file

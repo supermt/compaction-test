@@ -6,7 +6,7 @@
 #define COMPACTION_TEST_CUCKOO_TABLE_READER_H
 
 
-class CuckooTableReader {
+class CuckooTable final : public Table {
 
 private:
   int fd;

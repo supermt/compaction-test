@@ -8,28 +8,20 @@
 
 #include <unistd.h>
 #include "db_format/dbformat.h"
+#include "tables/table.h"
 #include <vector>
 
-class GearTableBuilder {
-private:
-  explicit GearTableBuilder(std::string fname);
-
-  ~GearTableBuilder();
-
-  int target_fd;
-  int num_of_blocks;
-
-  std::vector<Slice> key_list;
-  std::vector<Slice> value_list;
+class GearTableBuilder : public Table {
 
 public:
 
-  int AddBlock(OnBoardBlock target_block);
-  // transform to other format, generate key/value map
+  int ToDiskFormat(std::string *disk_format_buffer) override;
 
-  int WriteToFile(const Slice &data_pack, uint32_t last_entry_count);
+  int FromDiskFormat(const Slice &data_pack, uint32_t *last_entry_count) override;
 
-  uint64_t ParseFromDataPack(const Slice &data_pack, uint32_t *last_entry_count);
+  explicit GearTableBuilder(std::string fname);
+
+  ~GearTableBuilder() override = default;
 };
 
 

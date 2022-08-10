@@ -2,28 +2,33 @@
 // Created by supermt on 8/10/22.
 //
 
-#include <unistd.h>
-#include <fcntl.h>
-#include "tables/gear_table_builder.h"
-#include "utils/coding.h"
+#include "tables/table.h"
 
-int GearTableBuilder::WriteToFile(const Slice &data_pack, uint32_t last_entry_count) {
- return write(target_fd, data_pack.data(), data_pack.size());
+Table::~Table() {
+ close(target_fd);
 }
 
-GearTableBuilder::GearTableBuilder(std::string fname) {
- num_of_blocks = 0;
- target_fd = open(fname.c_str(), (O_RDWR | O_CREAT));
+Table::Table(std::string fname) {
+ target_fd = open(fname.c_str(), O_WRONLY, 0644);
  assert(target_fd != -1);
 }
 
-int GearTableBuilder::AddBlock(OnBoardBlock target_block) {
- target_block.AppendToFile(this->target_fd);
- num_of_blocks++;
- return num_of_blocks;
+int Table::WriteToDisk(const Slice &data_pack) {
+ int write_bytes = write(target_fd, data_pack.data(), data_pack.size());
+ assert(write_bytes != -1);
+ return write_bytes;
 }
 
-uint64_t GearTableBuilder::ParseFromDataPack(const Slice &data_pack, uint32_t *last) {
+uint64_t Table::ReadFromDisk(std::string *result_buffer, uint64_t file_length) {
+ char *buffer = new char(file_length);
+ int readed_bytes = read(target_fd, buffer, file_length);
+ *result_buffer = std::string(buffer);
+ delete buffer;
+ assert(readed_bytes != -1);
+ return readed_bytes;
+}
+
+uint64_t Table::FromOnBoardBlocks(const Slice &data_pack, uint32_t *last) {
  uint64_t num_entries = 0;
  uint64_t current_key_length = 0;
  uint64_t current_value_length = 0;
@@ -54,6 +59,14 @@ uint64_t GearTableBuilder::ParseFromDataPack(const Slice &data_pack, uint32_t *l
  return num_entries;
 }
 
-GearTableBuilder::~GearTableBuilder() {
- close(target_fd);
+void Table::ToOnBoardFormat(std::string *result_buffer) const {
+ auto *result_list = new std::vector<OnBoardBlock>();
+ assert(result_buffer != nullptr);
+ ComposeOnBoardBlock(key_list, value_list, result_list);
+ for (const auto &result: *result_list) {
+  result_buffer->append(result.content_block);
+ }
+ delete result_list;
 }
+
+

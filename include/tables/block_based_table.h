@@ -5,8 +5,9 @@
 #ifndef COMPACTION_TEST_BLOCK_BASED_READER_H
 #define COMPACTION_TEST_BLOCK_BASED_READER_H
 
+#include "tables/table.h"
 
-class BlockBasedReader {
+class BlockBasedTable : public Table {
 
 };
 

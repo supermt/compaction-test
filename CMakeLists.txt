@@ -426,14 +426,16 @@ find_package(Threads REQUIRED)
 set(SOURCES
         tables/FPGA_interfaces.cpp
         db_format/dbformat.cc
-        tables/gear_table/gear_table_reader.cc
-        tables/gear_table/gear_table_builder.cpp
+        tables/gear_table/gear_table.cc
         db_format/on_board_block.cpp
         utils/cleanable.cc
         utils/slice.cc
         utils/coding.cc
         utils/string_util.cc
         db_format/dbformat.cc
+        tables/table_builder.cc
+        tables/plain_table/plain_table.cc
+        include/merger.cc
         )
 
 if (HAVE_SSE42 AND NOT MSVC)

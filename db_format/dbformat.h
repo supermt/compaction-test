@@ -13,6 +13,8 @@
 #include <memory>
 #include <string>
 #include <utility>
+#include <fcntl.h>
+#include <unistd.h>
 
 #include "on_board_format.h"
 #include "comparator.h"

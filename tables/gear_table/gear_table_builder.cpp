@@ -53,3 +53,7 @@ uint64_t GearTableBuilder::ParseFromDataPack(const Slice &data_pack, uint32_t *l
  }
  return num_entries;
 }
+
+GearTableBuilder::~GearTableBuilder() {
+ close(target_fd);
+}

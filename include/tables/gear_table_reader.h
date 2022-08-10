@@ -16,6 +16,8 @@ public:
 
   explicit GearTableReader(const std::string &fname);
 
+  ~GearTableReader();
+
 private:
   int fd;
   int num_block;

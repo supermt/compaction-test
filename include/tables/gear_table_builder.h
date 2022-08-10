@@ -14,6 +14,8 @@ class GearTableBuilder {
 private:
   explicit GearTableBuilder(std::string fname);
 
+  ~GearTableBuilder();
+
   int target_fd;
   int num_of_blocks;
 

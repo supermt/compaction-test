@@ -45,8 +45,7 @@ uint64_t GearTableBuilder::ParseFromDataPack(const Slice &data_pack, uint32_t *l
   for (uint32_t j = 0; j < *last; j++) {
    Slice key(data_pack.data() + BLOCK_SIZE - j * (KEY_CONTENT_LENGTH + KEY_SUFFIX_LENGTH),
              (KEY_SUFFIX_LENGTH + KEY_CONTENT_LENGTH));
-   Slice value(data_pack.data() + j * (KEY_CONTENT_LENGTH + KEY_SUFFIX_LENGTH),
-               (KEY_SUFFIX_LENGTH + KEY_CONTENT_LENGTH));
+   Slice value(data_pack.data() + j * VALUE_LENGTH, VALUE_LENGTH);
    key_list.push_back(key);
    value_list.push_back(value);
    num_entries++;

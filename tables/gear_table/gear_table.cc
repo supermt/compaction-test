@@ -2,9 +2,7 @@
 // Created by supermt on 8/10/22.
 //
 
-#include <utility>
 #include "tables/gear_table_builder.h"
-#include "utils/coding.h"
 
 GearTableBuilder::GearTableBuilder(std::string fname)
     : Table(std::move(fname)) {

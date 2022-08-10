@@ -9,6 +9,15 @@
 
 class BlockBasedTable : public Table {
 
+
+public:
+
+  int ToDiskFormat(std::string *disk_format_buffer) override;
+
+  int FromDiskFormat(const Slice &data_pack, uint32_t *last_entry_count) override;
+
+  explicit BlockBasedTable(std::string fname);
+
 };
 
 

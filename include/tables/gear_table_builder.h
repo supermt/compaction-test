@@ -6,10 +6,7 @@
 #define FPGA_OFFLOADING_LSM_GEAR_TABLE_BUILDER_H
 
 
-#include <unistd.h>
-#include "db_format/dbformat.h"
 #include "tables/table.h"
-#include <vector>
 
 class GearTableBuilder : public Table {
 
@@ -21,7 +18,6 @@ public:
 
   explicit GearTableBuilder(std::string fname);
 
-  ~GearTableBuilder() override = default;
 };
 
 

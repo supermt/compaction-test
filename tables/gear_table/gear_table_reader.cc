@@ -6,16 +6,12 @@
 #include <unistd.h>
 #include <fcntl.h>
 
-int GearTableReader::ReadWholeFile(std::string *result, uint64_t read_length) {
- char *buffer = new char();
- int readed_bytes = read(fd, buffer, read_length);
- if (readed_bytes == -1) {
-  assert(read_length != 0);
- }
+int GearTableReader::ReadWholeFile(std::string *result, uint64_t file_length) {
+ char *buffer = new char(file_length);
+ int readed_bytes = read(fd, buffer, file_length);
  delete buffer;
-
-
- return 0;
+ assert(readed_bytes != -1);
+ return readed_bytes;
 }
 
 GearTableReader::GearTableReader(const std::string &fname) : num_block(0), last_entry_count(0) {

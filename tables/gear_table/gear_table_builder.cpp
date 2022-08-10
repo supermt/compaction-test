@@ -4,7 +4,7 @@
 
 #include <unistd.h>
 #include <fcntl.h>
-#include "gear_table_builder.h"
+#include "tables/gear_table_builder.h"
 #include "utils/coding.h"
 
 int GearTableBuilder::WriteToFile(const Slice &data_pack, uint32_t last_entry_count) {
@@ -17,7 +17,7 @@ GearTableBuilder::GearTableBuilder(std::string fname) {
  assert(target_fd != -1);
 }
 
-int GearTableBuilder::AddBlock(gear_block target_block) {
+int GearTableBuilder::AddBlock(OnBoardBlock target_block) {
  target_block.AppendToFile(this->target_fd);
  num_of_blocks++;
  return num_of_blocks;
@@ -42,10 +42,10 @@ uint64_t GearTableBuilder::ParseFromDataPack(const Slice &data_pack, uint32_t *l
   GetFixed32(&temp, &key_length);
   GetFixed32(&temp, &value_length);
   GetFixed32(&temp, &placeholder_length);
-  for (uint32_t i = 0; i < *last; i++) {
-   Slice key(data_pack.data() + BLOCK_SIZE - i * (KEY_CONTENT_LENGTH + KEY_SUFFIX_LENGTH),
+  for (uint32_t j = 0; j < *last; j++) {
+   Slice key(data_pack.data() + BLOCK_SIZE - j * (KEY_CONTENT_LENGTH + KEY_SUFFIX_LENGTH),
              (KEY_SUFFIX_LENGTH + KEY_CONTENT_LENGTH));
-   Slice value(data_pack.data() + i * (KEY_CONTENT_LENGTH + KEY_SUFFIX_LENGTH),
+   Slice value(data_pack.data() + j * (KEY_CONTENT_LENGTH + KEY_SUFFIX_LENGTH),
                (KEY_SUFFIX_LENGTH + KEY_CONTENT_LENGTH));
    key_list.push_back(key);
    value_list.push_back(value);

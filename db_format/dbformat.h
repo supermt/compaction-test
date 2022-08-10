@@ -14,6 +14,7 @@
 #include <string>
 #include <utility>
 
+#include "on_board_format.h"
 #include "comparator.h"
 #include "types.h"
 #include "utils/coding.h"

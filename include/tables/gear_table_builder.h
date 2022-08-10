@@ -7,7 +7,7 @@
 
 
 #include <unistd.h>
-#include "gear_block.h"
+#include "db_format/dbformat.h"
 #include <vector>
 
 class GearTableBuilder {
@@ -22,12 +22,12 @@ private:
 
 public:
 
-  int AddBlock(gear_block target_block);
+  int AddBlock(OnBoardBlock target_block);
   // transform to other format, generate key/value map
 
   int WriteToFile(const Slice &data_pack, uint32_t last_entry_count);
 
-  uint64_t ParseFromDataPack(const Slice &data_pack, uint32_t* last_entry_count);
+  uint64_t ParseFromDataPack(const Slice &data_pack, uint32_t *last_entry_count);
 };
 
 

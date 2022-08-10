@@ -3,7 +3,6 @@
 //
 #include <iostream>
 
-#include "gear_bench_classes.h"
 
 #include <gflags/gflags.h>
 

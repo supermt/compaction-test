@@ -424,13 +424,17 @@ find_package(Threads REQUIRED)
 # Main library source code
 
 set(SOURCES
+        tables/FPGA_interfaces.cpp
+        db_format/dbformat.cc
+        tables/gear_table/gear_table_reader.cc
         tables/gear_table/gear_table_builder.cpp
-        tables/gear_table/gear_block.cpp
+        db_format/on_board_block.cpp
         utils/cleanable.cc
         utils/slice.cc
         utils/coding.cc
         utils/string_util.cc
-        db_format/dbformat.cc tables/gear_table/FPGA_interfaces.cpp tables/gear_table/FPGA_interfaces.h)
+        db_format/dbformat.cc
+        )
 
 if (HAVE_SSE42 AND NOT MSVC)
     set_source_files_properties(
@@ -466,7 +470,7 @@ target_link_libraries(${ROCKSDB_STATIC_LIB}
         ${THIRDPARTY_LIBS} ${SYSTEM_LIBS})
 
 if (ROCKSDB_BUILD_SHARED)
-    add_library(${ROCKSDB_SHARED_LIB} SHARED ${SOURCES} tables/gear_table/FPGA_interfaces.cpp tables/gear_table/FPGA_interfaces.h)
+    add_library(${ROCKSDB_SHARED_LIB} SHARED ${SOURCES})
     target_link_libraries(${ROCKSDB_SHARED_LIB} PRIVATE
             ${THIRDPARTY_LIBS} ${SYSTEM_LIBS})
 

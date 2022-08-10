@@ -2,13 +2,12 @@
 // Created by supermt on 8/10/22.
 //
 
-#include "gear_block.h"
-#include "db_format/dbformat.h"
+#include "db_format/on_board_format.h"
 #include <cassert>
 #include <unistd.h>
 
 
-int gear_block::AddBlock(std::vector<Slice> keys, std::vector<Slice> values) {
+int OnBoardBlock::AddBlock(std::vector<Slice> keys, std::vector<Slice> values) {
  assert(keys.size() == values.size());
  num_of_entries = keys.size();
  for (ssize_t i = 0; i < num_of_entries; i++) {
@@ -19,7 +18,7 @@ int gear_block::AddBlock(std::vector<Slice> keys, std::vector<Slice> values) {
  return num_of_entries;
 }
 
-int gear_block::AppendToFile(int target_fd) {
+int OnBoardBlock::AppendToFile(int target_fd) {
  auto append_result = write(target_fd, content_block.c_str(), BLOCK_SIZE);
  if (append_result == -1) {
   assert(-1);
@@ -27,7 +26,7 @@ int gear_block::AppendToFile(int target_fd) {
  return (int) append_result;
 }
 
-int gear_block::ComposeResults() {
+int OnBoardBlock::ComposeResults() {
  uint32_t placeholder_length =
      BLOCK_SIZE - (HEADER_LENGTH +
                    key_content.size() + value_content.size());

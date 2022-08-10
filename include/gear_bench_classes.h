@@ -15,8 +15,7 @@
 #include <utility>
 #include <set>
 
-#include "tables/gear_table/gear_block.h"
-#include "tables/gear_table/gear_table_builder.h"
+#include "tables/gear_table_builder.h"
 #include "utils/kv_map.h"
 #include "gear_bench_classes.h"
 #include "db_format/dbformat.h"

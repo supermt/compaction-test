@@ -2,25 +2,21 @@
 // Created by supermt on 8/10/22.
 //
 
-#ifndef FPGA_OFFLOADING_LSM_GEAR_BLOCK_H
-#define FPGA_OFFLOADING_LSM_GEAR_BLOCK_H
+#ifndef COMPACTION_TEST_GEAR_TABLE_FORMAT_H
+#define COMPACTION_TEST_GEAR_TABLE_FORMAT_H
 
-#include <string>
-#include <memory>
-#include <utility>
-#include <slice.h>
 #include <vector>
+#include "slice.h"
+#include "utils/coding.h"
 
 #define BLOCK_SIZE 8*1024
 #define HEADER_LENGTH 64
 #define KEY_CONTENT_LENGTH 8
 #define KEY_SUFFIX_LENGTH 8
 
-
-class gear_block {
-
+class OnBoardBlock {
 public:
-  explicit gear_block(int block_id) : num_of_entries(0), block_id_(block_id) {
+  explicit OnBoardBlock(int block_id) : num_of_entries(0), block_id_(block_id) {
   }
 
   int AppendToFile(int target_fd);
@@ -39,4 +35,4 @@ private:
 };
 
 
-#endif //FPGA_OFFLOADING_LSM_GEAR_BLOCK_H
+#endif //COMPACTION_TEST_GEAR_TABLE_FORMAT_H

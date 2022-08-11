@@ -55,7 +55,7 @@ else ()
 endif ()
 
 if (NOT DEFINED CMAKE_CXX_STANDARD)
-    set(CMAKE_CXX_STANDARD 11)
+    set(CMAKE_CXX_STANDARD 17)
 endif ()
 
 include(CMakeDependentOption)
@@ -90,7 +90,7 @@ if (WIN32 AND MSVC)
 endif ()
 
 # add by jinghuan for cmake toolchain
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS_INIT} -std=c++17 -pthread")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS_INIT} -pthread")
 
 if (MSVC)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /Zi /nologo /EHsc /GS /Gd /GR /GF /fp:precise /Zc:wchar_t /Zc:forScope /errorReport:queue")

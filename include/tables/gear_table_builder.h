@@ -8,7 +8,7 @@
 
 #include "tables/table.h"
 
-class GearTableBuilder : public Table {
+class GearTable : public Table {
 
 public:
 
@@ -16,7 +16,7 @@ public:
 
   int FromDiskFormat(const Slice &data_pack, uint32_t *last_entry_count) override;
 
-  explicit GearTableBuilder(std::string fname);
+  explicit GearTable(const std::string& fname);
 
 };
 

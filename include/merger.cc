@@ -21,10 +21,10 @@ uint64_t Merger::DoCompaction() {
 }
 
 
-Merger::Merger(std::vector<std::string> input_fnames, TableFormat tableFormat) {
+Merger::Merger(std::vector<std::string> input_fnames, TableFormat tableFormat, FileNameCreator *file_name_handler) {
  format = tableFormat;
  for (auto input_fname: input_fnames) {
-  input_files.push_back(CreateFileFromName(input_fname));
+  input_files.push_back(CreateFilePointerFromName(input_fname));
  }
 }
 
@@ -61,7 +61,7 @@ uint64_t Merger::WriteOutResult() {
   for (size_t j = 0; j < block_num; j++) {
    temp.append(data_pack->at(j).content_block);
   }
-  Table *temp_ptr = CreateFileFromName(fileNameCreator.NextFileName());
+  Table *temp_ptr = CreateFilePointerFromName(fileNameCreator->NextFileName());
   uint32_t last_entry_count = 0;
   temp_ptr->FromOnBoardBlocks(Slice(temp), &last_entry_count);
  }
@@ -69,19 +69,19 @@ uint64_t Merger::WriteOutResult() {
  return 0;
 }
 
-std::vector<std::string> Merger::CreateInputFileNames(uint64_t number_of_input_files) {
+std::vector<std::string> Merger::CreateInputFileNames(uint64_t number_of_input_files) const {
  std::vector<std::string> results(number_of_input_files);
  for (auto result: results) {
-  result = fileNameCreator.NextFileName();
+  result = fileNameCreator->NextFileName();
  }
  return results;
 }
 
-Table *Merger::CreateFileFromName(std::string fname) {
+Table *Merger::CreateFilePointerFromName(std::string fname) const {
  Table *temp_ptr;
  switch (format) {
   case kGear:
-   temp_ptr = new GearTableBuilder(fname);
+   temp_ptr = new GearTable(fname);
    break;
   case kBlockBased:
    temp_ptr = new BlockBasedTable(fname);
@@ -168,12 +168,8 @@ void Merger::PickUniqueVersion(std::pair<Slice *, Slice *> current_pair, Slice l
 
 }
 
-FileNameCreator::FileNameCreator() : file_number(0) {
-
-}
-
 std::string FileNameCreator::NextFileName() {
  std::ostringstream ostr;
- ostr << std::setfill('0') << std::setw(8) << file_number.fetch_add(1) << ".sst";
+ ostr << base_dir << "/" << std::setfill('0') << std::setw(8) << file_number.fetch_add(1) << ".sst";
  return ostr.str();
 }

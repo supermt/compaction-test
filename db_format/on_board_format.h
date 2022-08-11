@@ -33,15 +33,7 @@ public:
   std::string value_content;
   int num_of_entries;
   const int block_id_;
-
-
 };
-//
-//struct EntryList {
-//  std::vector<Slice> key_array;
-//  std::vector<Slice> value_array;
-//};
-
 
 static void
 ComposeEntryVector(std::vector<Slice> *key_array, std::vector<Slice> *value_array, const Slice &input_blocks) {

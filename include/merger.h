@@ -6,6 +6,7 @@
 #define COMPACTION_TEST_MERGER_H
 
 #include <atomic>
+#include <utility>
 #include "tables/table.h"
 
 enum FilterLogic : int {
@@ -24,8 +25,9 @@ enum TableFormat : int {
 class FileNameCreator {
 public:
   std::atomic<int> file_number;
+  const std::string base_dir;
 
-  FileNameCreator();
+  FileNameCreator(std::string dir_name) : file_number(0), base_dir(std::move(dir_name)) {};
 
   std::string NextFileName();
 };
@@ -77,13 +79,13 @@ namespace heap_merger {
 
 class Merger {
 public:
-  Merger(std::vector<std::string> input_fnames, TableFormat format);
+  Merger(std::vector<std::string> input_fnames, TableFormat format, FileNameCreator *file_name_handler);
 
-  FileNameCreator fileNameCreator;
+  FileNameCreator *fileNameCreator;
 
-  std::vector<std::string> CreateInputFileNames(uint64_t number_of_input_files);
+  std::vector<std::string> CreateInputFileNames(uint64_t number_of_input_files) const;
 
-  Table *CreateFileFromName(std::string fname);
+  Table *CreateFilePointerFromName(std::string fname) const;
 
   uint64_t DoCompaction();
 
@@ -106,6 +108,7 @@ public:
   std::vector<Slice> result_values;
   std::vector<std::pair<Slice, Slice>> abandoned_values;
 
+  std::vector<Table *> output_files;
   std::priority_queue<heap_merger::kv_pair, std::vector<heap_merger::kv_pair>, heap_merger::KeyComparor> pq;
   FilterLogic logic_;
   FilterArgs bound_;

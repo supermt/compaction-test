@@ -49,6 +49,9 @@ int OnBoardBlock::ComposeResults() {
  PutFixed32(&content_block, 0);
  PutFixed32(&content_block, 0);
  PutFixed32(&content_block, 0);
+ content_block.append(value_content);
+ std::string placeholder(placeholder_length, 'h');
+ content_block.append(key_content);
 
  return 0;
 }

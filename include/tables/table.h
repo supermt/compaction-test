@@ -13,11 +13,11 @@
 
 class Table {
 public:
-  explicit Table(std::string fname);
+  explicit Table(const std::string &fname);
 
   virtual ~Table();
 
-  uint64_t ReadFromDisk(std::string *result_buffer, uint64_t read_length);
+  uint64_t ReadFromDisk(std::string *result_buffer, uint64_t read_length) const;
 
   uint64_t FromOnBoardBlocks(const Slice &data_pack, uint32_t *last_entry_count);
 
@@ -27,12 +27,13 @@ public:
 
   virtual int FromDiskFormat(const Slice &data_pack, uint32_t *last_entry_count) = 0;
 
-  int WriteToDisk(const Slice &data_pack);
+  int WriteToDisk(const std::string &data_pack) const;
 
   std::vector<Slice> key_list;
   std::vector<Slice> value_list;
   int target_fd;
-  int num_of_blocks;
+  std::string file_name;
+  int num_of_blocks = 0;
 };
 
 

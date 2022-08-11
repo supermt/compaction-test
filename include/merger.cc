@@ -20,45 +20,6 @@ uint64_t Merger::DoCompaction() {
  return 0;
 }
 
-namespace heap_merger {
-  typedef std::pair<Slice *, Slice *> kv_pair;
-
-  class KeyComparor {
-  public:
-    int operator()(const kv_pair &p1, const kv_pair &p2) {
-
-     ParsedInternalKey *p1_key = new ParsedInternalKey();
-     ParsedInternalKey *p2_key = new ParsedInternalKey();
-     ParseInternalKey(*p1.first, p1_key);
-     ParseInternalKey(*p2.first, p2_key);
-
-     int r = p1_key->user_key.compare(p2_key->user_key);
-     if (r == 0) {
-      if (p1_key->sequence > p2_key->sequence) {
-       r = -1;
-      } else if (p1_key->sequence < p2_key->sequence) {
-       r = +1;
-      } else if (p1_key->type > p2_key->type) {
-       r = -1;
-      } else if (p1_key->type < p2_key->type) {
-       r = +1;
-      }
-     }
-
-     return r;
-    }
-  };
-
-  inline void
-  merge_by_min_heap(std::vector<Table *> files, std::priority_queue<kv_pair, std::vector<kv_pair>, KeyComparor> *pq) {
-   for (auto file: files) {
-    for (size_t i = 0; i < file->key_list.size(); i++) {
-     pq->emplace(std::make_pair(file->key_list.data() + i, file->value_list.data() + i));
-    }
-   }
-
-  }
-};
 
 Merger::Merger(std::vector<std::string> input_fnames, TableFormat tableFormat) {
  format = tableFormat;
@@ -71,15 +32,7 @@ uint64_t Merger::MergeEntries() {
  result_keys.clear();
  result_values.clear();
  // we merge it by a min heap
- using namespace heap_merger;
- std::priority_queue<kv_pair, std::vector<kv_pair>, KeyComparor> pq;
  merge_by_min_heap(input_files, &pq);
- while (!pq.empty()) {
-  auto key_value = pq.top();
-  result_keys.push_back(*key_value.first);
-  result_values.push_back(*key_value.second);
-  pq.pop();
- }
  return 0;
 }
 
@@ -144,7 +97,75 @@ Table *Merger::CreateFileFromName(std::string fname) {
 }
 
 uint64_t Merger::DoFilter() {
+
+ while (!pq.empty()) {
+  auto current_pair = pq.top();
+  auto last_pair = result_keys.back();
+  switch (logic_) {
+   case kRemoveRedundant:
+    // save only the last key
+    DropRedundantKeys(current_pair, last_pair);
+    break;
+   case kDeletePrefix:
+    // remove all files with certain prefix
+    DropWithPrefix(current_pair);
+    break;
+   case kDeleteVersion:
+    PickUniqueVersion(current_pair, last_pair);
+    // remove all entries when version number is smaller
+    break;
+  }
+  pq.pop();
+ }
+
  return 0;
+}
+
+void Merger::GenerateFilterArgs(FilterLogic judgement_logic, FilterArgs judement_arg) {
+ logic_ = judgement_logic;
+ bound_ = judement_arg;
+}
+
+void Merger::DropRedundantKeys(std::pair<Slice *, Slice *> current_pair, Slice last_key) {
+
+ ParsedInternalKey parsed_current;
+ ParsedInternalKey parsed_last;
+ ParseInternalKey(*current_pair.first, &parsed_current);
+ ParseInternalKey(last_key, &parsed_current);
+
+ if (parsed_current.user_key == parsed_last.user_key) {
+  abandoned_values.emplace_back(result_keys.back(), result_values.back());
+  result_keys.pop_back();
+  result_values.pop_back();
+ }
+ result_keys.push_back(*current_pair.first);
+ result_values.push_back(*current_pair.second);
+}
+
+void Merger::DropWithPrefix(std::pair<Slice *, Slice *> current_pair) {
+ ParsedInternalKey parsed_current;
+ ParseInternalKey(*current_pair.first, &parsed_current);
+ if (parsed_current.user_key.starts_with(bound_.prefix)) {
+  abandoned_values.emplace_back(*current_pair.first, *current_pair.second);
+ }
+
+}
+
+void Merger::PickUniqueVersion(std::pair<Slice *, Slice *> current_pair, Slice last_key) {
+
+ ParsedInternalKey parsed_current;
+ ParsedInternalKey parsed_last;
+ ParseInternalKey(*current_pair.first, &parsed_current);
+ ParseInternalKey(last_key, &parsed_current);
+
+ if (parsed_current.user_key == parsed_last.user_key && parsed_current.sequence < bound_.seq) {
+  abandoned_values.emplace_back(result_keys.back(), result_values.back());
+  result_keys.pop_back();
+  result_values.pop_back();
+ }
+ result_keys.push_back(*current_pair.first);
+ result_values.push_back(*current_pair.second);
+
 }
 
 FileNameCreator::FileNameCreator() : file_number(0) {

@@ -42,9 +42,12 @@ public:
 
   uint64_t WriteOutResult();
 
+  uint64_t DoFilter();
+
   std::vector<Table *> input_files;
   std::vector<Slice> result_keys;
   std::vector<Slice> result_values;
+  std::vector<Slice> abandoned_values;
   TableFormat format;
 };
 

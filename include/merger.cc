@@ -16,6 +16,7 @@ uint64_t Merger::DoCompaction() {
  PrepareEntries();
  MergeEntries();
  WriteOutResult();
+ DoFilter();
  return 0;
 }
 
@@ -140,6 +141,10 @@ Table *Merger::CreateFileFromName(std::string fname) {
    break;
  }
  return temp_ptr;
+}
+
+uint64_t Merger::DoFilter() {
+ return 0;
 }
 
 FileNameCreator::FileNameCreator() : file_number(0) {

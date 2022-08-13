@@ -158,17 +158,8 @@ void Merger::PickUniqueVersion(std::pair<Slice *, Slice *> current_pair, Slice l
  ParseInternalKey(*current_pair.first, &parsed_current);
  ParseInternalKey(last_key, &parsed_current);
 
-
- if (parsed_current.user_key.starts_with(bound_.prefix) && parsed_current.sequence <= bound_.seq) {
-
-  if (redundant_user_keys.back().first == parsed_current.user_key) {
-   abandoned_values.emplace_back(redundant_user_keys.back());
-   redundant_user_keys.pop_back();
-  }
-  redundant_user_keys.emplace_back(result_keys.back(), result_values.back());
-
-
-  //  abandoned_values.emplace_back(result_keys.back(), result_values.back());
+ if (parsed_current.user_key == parsed_last.user_key && parsed_current.sequence < bound_.seq) {
+  abandoned_values.emplace_back(result_keys.back(), result_values.back());
   result_keys.pop_back();
   result_values.pop_back();
  }

@@ -107,6 +107,7 @@ public:
   std::vector<Slice> result_keys;
   std::vector<Slice> result_values;
   std::vector<std::pair<Slice, Slice>> abandoned_values;
+  std::vector<std::pair<Slice, Slice>> redundant_user_keys;
 
   std::vector<Table *> output_files;
   std::priority_queue<heap_merger::kv_pair, std::vector<heap_merger::kv_pair>, heap_merger::KeyComparor> pq;
@@ -116,6 +117,17 @@ public:
   TableFormat format;
 
   void PickUniqueVersion(std::pair<Slice *, Slice *> current_pair, Slice last_key);
+};
+
+class BaselineMerger : public Merger {
+};
+
+class StreamMerger : public Merger {
+public:
+  StreamMerger(std::vector<std::string> inputFnames, FileNameCreator *fileNameHandler) :
+      Merger(inputFnames, kGear, fileNameHandler) {
+  }
+
 };
 
 

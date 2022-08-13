@@ -53,7 +53,7 @@ DEFINE_int64(bench_threads, 1, "number of working threads");
 
 DEFINE_double(span_range, 1.0, "The overlapping range of ");
 DEFINE_double(min_value, 0, "The min values of the key range");
-DEFINE_uint64(distinct_num, 312 * 1000, "number of distinct entries");
+DEFINE_uint64(distinct_num, ENTRIES_PER_FILE * 10, "number of distinct entries");
 
 // Key size settings.
 DEFINE_int32(key_size, 8, "size of each user key");

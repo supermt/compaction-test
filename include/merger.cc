@@ -13,7 +13,7 @@
 #include "tables/plain_table.h"
 
 uint64_t Merger::DoCompaction() {
- PrepareEntries();
+ PrepareFiles();
  MergeEntries();
  WriteOutResult();
  DoFilter();
@@ -36,7 +36,7 @@ uint64_t Merger::MergeEntries() {
  return 0;
 }
 
-uint64_t Merger::PrepareEntries() {
+uint64_t Merger::PrepareFiles() {
  size_t total_entries = 0;
  for (auto file: input_files) {
   std::string file_content;

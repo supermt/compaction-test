@@ -432,6 +432,7 @@ set(SOURCES
         db_format/dbformat.cc
         db_format/on_board_fomat.cc
         include/merger.cc
+        include/stream_merger.cc
         tables/block_based/block_based_table.cc
         tables/cuckoo_table/cuckoo_table.cc
         tables/gear_table/gear_table.cc

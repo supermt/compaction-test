@@ -87,7 +87,7 @@ public:
 
   Table *CreateFilePointerFromName(std::string fname) const;
 
-  uint64_t DoCompaction();
+  virtual uint64_t DoCompaction();
 
   void GenerateFilterArgs(FilterLogic judgement_logic, FilterArgs judement_arg);
 
@@ -97,7 +97,7 @@ public:
 
   uint64_t MergeEntries();
 
-  uint64_t PrepareEntries();
+  uint64_t PrepareFiles();
 
   uint64_t WriteOutResult();
 
@@ -122,11 +122,20 @@ public:
 class BaselineMerger : public Merger {
 };
 
-class StreamMerger : public Merger {
+class FPGA_Stream_Merger : public Merger {
 public:
-  StreamMerger(std::vector<std::string> inputFnames, FileNameCreator *fileNameHandler) :
-      Merger(inputFnames, kGear, fileNameHandler) {
-  }
+  FPGA_Stream_Merger(std::vector<std::string> input_files, TableFormat format,
+                     FileNameCreator *fileNameHandler, ssize_t memory_budget);
+
+  ssize_t file_window_size;
+
+  std::string buffer;
+
+  uint64_t DoCompaction() override;
+
+};
+
+class PipelineMerger : public Merger {
 
 };
 

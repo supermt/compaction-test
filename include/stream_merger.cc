@@ -31,9 +31,26 @@ inline void TransportToFPGA(const char *buffer, uint64_t data_size) {
 
 inline void WaitForFPGA() {}
 
+inline void InitialArbitrationCondition(FilterLogic arbitration, FilterArgs values) {
+ // pass the arguments for the arbitration
+// enum FilterLogic : int {
+//   kRemoveRedundant = 0x0,
+//   kDeletePrefix,
+//   kDeleteVersion,
+// };
+
+
+// struct FilterArgs {
+//   SequenceNumber seq;
+//   Slice prefix;
+// };
+}
+
 uint64_t FPGA_Stream_Merger::DoCompaction() {
  //read the files with a fixed file_window_size
  int read_bytes = -1;
+
+
  while (read_bytes != 0) {
   read_bytes = 0;
   buffer.clear();

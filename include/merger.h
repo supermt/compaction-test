@@ -130,6 +130,7 @@ public:
   ssize_t file_window_size;
 
   std::string buffer;
+  std::vector<std::string> abandoned_entries_for_FPGA;
 
   uint64_t DoCompaction() override;
 

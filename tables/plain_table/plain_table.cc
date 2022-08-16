@@ -6,8 +6,8 @@
 
 int PlainTable::ToDiskFormat(std::string *disk_format_buffer) {
  for (ssize_t i = 0; i < key_list.size(); i++) {
-  disk_format_buffer->append(key_list[i].data());
-  disk_format_buffer->append(value_list[i].data());
+  disk_format_buffer->append(key_list[i].data(), key_list[i].size());
+  disk_format_buffer->append(value_list[i].data(), value_list[i].size());
  }
  return 0;
 }

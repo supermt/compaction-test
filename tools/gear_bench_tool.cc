@@ -53,7 +53,8 @@ DEFINE_int64(bench_threads, 1, "number of working threads");
 
 DEFINE_double(span_range, 1.0, "The overlapping range of ");
 DEFINE_double(min_value, 0, "The min values of the key range");
-DEFINE_uint64(distinct_num, ENTRIES_PER_FILE * 10, "number of distinct entries");
+DEFINE_uint64(distinct_num, ENTRIES_PER_FILE * 4, "number of distinct entries");
+DEFINE_string(benchmark, "baseline,gear", "baseline merger");
 
 // Key size settings.
 DEFINE_int32(key_size, 8, "size of each user key");
@@ -132,8 +133,19 @@ void generate_files(uint64_t start_key, uint64_t range, Random64 *rand, FileName
  }//end while
 }
 
-int main(int argc, char **argv) {
- ParseCommandLineFlags(&argc, &argv, true);
+std::vector<std::string> split(const std::string &s, char delim) {
+ std::vector<std::string> result;
+ std::stringstream ss(s);
+ std::string item;
+
+ while (getline(ss, item, delim)) {
+  result.push_back(item);
+ }
+
+ return result;
+}
+
+void FPGAMerger() {
  std::cout << "start" << std::endl;
 
  std::filesystem::create_directories(FLAGS_db_path);
@@ -160,7 +172,54 @@ int main(int argc, char **argv) {
  auto end = std::chrono::steady_clock::now();
  std::chrono::duration<double> elapsed_seconds = end - start;
  std::cout << "Secs used: " << elapsed_seconds.count() << std::endl;
+}
 
- Merger(input_files, kGear, &file_name_handler);
+
+void BaselineMergeTask() {
+ std::cout << "start" << std::endl;
+
+ std::filesystem::create_directories(FLAGS_db_path);
+ FileNameCreator file_name_handler(FLAGS_db_path);
+ Random64 rand(FLAGS_seed);
+
+ std::atomic_uint64_t file_bytes;
+
+
+ auto start = std::chrono::steady_clock::now();
+
+ std::vector<uint64_t> start_posi(FLAGS_bench_threads);
+ uint64_t range_step = FLAGS_distinct_num / FLAGS_bench_threads;
+ std::vector<std::string> input_files;
+ FLAGS_table_format_enum = StringToRepFactory(FLAGS_table_format.c_str());
+ // create the files
+ for (int i = 0; i < FLAGS_bench_threads; i++) {
+  start_posi.push_back(range_step);
+//  generate_files(start_posi[i], range_step, &rand, &file_name_handler, &input_files);
+  std::thread t(generate_files, start_posi[i], range_step, &rand, &file_name_handler, &input_files);
+  t.join();
+ }
+
+ auto end = std::chrono::steady_clock::now();
+ std::chrono::duration<double> elapsed_seconds = end - start;
+ std::cout << "File Creation Time(sec): " << elapsed_seconds.count() << std::endl;
+
+ BaselineMerger merger(input_files, &file_name_handler);
+ merger.GenerateFilterArgs(kRemoveRedundant, FilterArgs());
+ start = std::chrono::steady_clock::now();
+ merger.DoCompaction();
+ end = std::chrono::steady_clock::now();
+ std::cout << "Merge Time (sec): " << elapsed_seconds.count() << std::endl;
+}
+
+
+int main(int argc, char **argv) {
+ ParseCommandLineFlags(&argc, &argv, true);
+
+ auto benchmarks = split(FLAGS_benchmark, ',');
+ for (auto benchmark: benchmarks) {
+  if (benchmark == "gear") { FPGAMerger(); }
+  else if (benchmark == "baseline") { BaselineMergeTask(); }
+ }
+
 
 }

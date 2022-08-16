@@ -9,7 +9,7 @@
 #include <iostream>
 #include <string>
 
-#define ENTRIES_PER_FILE MAX_ENTRY_IN_BLOCK * 1000
+#define ENTRIES_PER_FILE MAX_ENTRY_IN_BLOCK * 1
 
 class Table {
 public:

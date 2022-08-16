@@ -69,13 +69,6 @@ uint64_t Merger::WriteOutResult() {
  return 0;
 }
 
-std::vector<std::string> Merger::CreateInputFileNames(uint64_t number_of_input_files) const {
- std::vector<std::string> results(number_of_input_files);
- for (auto result: results) {
-  result = fileNameCreator->NextFileName();
- }
- return results;
-}
 
 Table *Merger::CreateFilePointerFromName(std::string fname) const {
  Table *temp_ptr;

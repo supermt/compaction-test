@@ -84,15 +84,18 @@ class Merger {
 public:
   Merger(std::vector<std::string> input_fnames, TableFormat format, FileNameCreator *file_name_handler);
 
-  FileNameCreator *fileNameCreator;
-
-  std::vector<std::string> CreateInputFileNames(uint64_t number_of_input_files) const;
-
-  Table *CreateFilePointerFromName(std::string fname) const;
-
   virtual uint64_t DoCompaction();
 
   void GenerateFilterArgs(FilterLogic judgement_logic, FilterArgs judement_arg);
+
+
+protected:
+  FileNameCreator *fileNameCreator;
+
+//  std::vector<std::string> CreateInputFileNames(uint64_t number_of_input_files) const;
+
+  Table *CreateFilePointerFromName(std::string fname) const;
+
 
   void DropRedundantKeys(std::pair<Slice *, Slice *> pair, Slice slice);
 
@@ -124,14 +127,12 @@ public:
 
 class BaselineMerger : public Merger {
 public:
-  BaselineMerger(std::vector<std::string> input_files, FileNameCreator *fileNameCreator, ssize_t file_window_size);
-
-  ssize_t file_window_size;
+  BaselineMerger(std::vector<std::string> input_files, FileNameCreator *fileNameCreator);
 
   uint64_t DoCompaction() override;
 
+protected:
   std::vector<PlainTable *> input_plain_files;
-  std::string buffer;
   std::vector<std::string> abandoned_entries;
   std::vector<std::string> file_iterators;
   std::string last_entry;

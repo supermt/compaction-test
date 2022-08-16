@@ -12,10 +12,8 @@
 #include "tables/gear_table_builder.h"
 #include "tables/plain_table.h"
 
-BaselineMerger::BaselineMerger(std::vector<std::string> input_files, FileNameCreator *fileNameCreator,
-                               ssize_t file_window_size) : Merger(input_files, kPlain, fileNameCreator) {
- uint block_num = file_window_size / BLOCK_SIZE;
- file_window_size = BLOCK_SIZE * block_num;
+BaselineMerger::BaselineMerger(std::vector<std::string> input_files, FileNameCreator *fileNameCreator) : Merger(
+    input_files, kPlain, fileNameCreator) {
 }
 
 inline int NextEntry(PlainTable *table, std::string *entry) {
@@ -160,9 +158,8 @@ uint64_t BaselineMerger::PrepareFiles() {
 
 uint64_t BaselineMerger::DoCompaction() {
  PrepareFiles();
- // do the merge
+ // do the merge and write out ouputs
  MergeEntries();
-
 }
 
 
@@ -226,4 +223,8 @@ uint64_t FPGA_Stream_Merger::DoCompaction() {
  // write back the results
  WriteOutResult();
  return 0;
+}
+
+uint64_t FPGA_Stream_Merger::MergeEntries() {
+ return -1;
 }

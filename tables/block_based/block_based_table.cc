@@ -4,7 +4,7 @@
 
 #include "tables/block_based_table.h"
 
-BlockBasedTable::BlockBasedTable(std::string fname) : Table(fname) {
+BlockBasedTable::BlockBasedTable(std::string fname, bool b) : Table(fname) {
 
 }
 

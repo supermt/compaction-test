@@ -9,8 +9,10 @@ Table::~Table() {
  close(target_fd);
 }
 
-Table::Table(const std::string &fname) : file_name(fname) {
- target_fd = open(fname.c_str(), O_CREAT | O_WRONLY, 0644);
+Table::Table(const std::string &fname, bool read) : file_name(fname) {
+ if (read) { target_fd = open(fname.c_str(), O_RDONLY); }
+ else { target_fd = open(fname.c_str(), O_CREAT | O_WRONLY, 0644); }
+
  assert(target_fd != -1);
 }
 

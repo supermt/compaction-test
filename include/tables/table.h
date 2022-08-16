@@ -13,7 +13,7 @@
 
 class Table {
 public:
-  explicit Table(const std::string &fname);
+  explicit Table(const std::string &fname, bool read = false);
 
   virtual ~Table();
 

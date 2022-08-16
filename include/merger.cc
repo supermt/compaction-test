@@ -74,16 +74,16 @@ Table *Merger::CreateFilePointerFromName(std::string fname) const {
  Table *temp_ptr;
  switch (format) {
   case kGear:
-   temp_ptr = new GearTable(fname);
+   temp_ptr = new GearTable(fname, true);
    break;
   case kBlockBased:
-   temp_ptr = new BlockBasedTable(fname);
+   temp_ptr = new BlockBasedTable(fname, true);
    break;
   case kPlain:
-   temp_ptr = new PlainTable(fname);
+   temp_ptr = new PlainTable(fname, true);
    break;
   case kCuckoo:
-   temp_ptr = new CuckooTable(fname);
+   temp_ptr = new CuckooTable(fname, true);
    break;
  }
  return temp_ptr;

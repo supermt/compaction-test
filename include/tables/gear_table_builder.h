@@ -16,7 +16,7 @@ public:
 
   int FromDiskFormat(const Slice &data_pack, uint32_t *last_entry_count) override;
 
-  explicit GearTable(const std::string& fname);
+  explicit GearTable(const std::string &fname, bool read = false);
 
 };
 

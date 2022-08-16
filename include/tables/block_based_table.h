@@ -16,7 +16,7 @@ public:
 
   int FromDiskFormat(const Slice &data_pack, uint32_t *last_entry_count) override;
 
-  explicit BlockBasedTable(std::string fname);
+  explicit BlockBasedTable(std::string fname, bool b);
 
 };
 

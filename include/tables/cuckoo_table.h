@@ -16,7 +16,7 @@ public:
 
   int FromDiskFormat(const Slice &data_pack, uint32_t *last_entry_count) override;
 
-  explicit CuckooTable(std::string fname);
+  explicit CuckooTable(std::string fname, bool b);
 
 };
 

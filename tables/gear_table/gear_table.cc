@@ -61,8 +61,8 @@ int GearBlock::ComposeResults() {
  return content_block.size();
 }
 
-GearTable::GearTable(const std::string &fname)
-    : Table(fname) {
+GearTable::GearTable(const std::string &fname, bool read)
+    : Table(fname, read) {
  std::cout << "creating gear table" << std::endl;
 }
 

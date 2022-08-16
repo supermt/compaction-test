@@ -86,13 +86,13 @@ inline Table *CreateTablePtr(const std::string &target_file_name) {
    current_file = new GearTable(target_file_name);
    break;
   case kBlockBased:
-   current_file = new BlockBasedTable(target_file_name);
+   current_file = new BlockBasedTable(target_file_name, false);
    break;
   case kPlain:
-   current_file = new PlainTable(target_file_name);
+   current_file = new PlainTable(target_file_name, false);
    break;
   case kCuckoo:
-   current_file = new CuckooTable(target_file_name);
+   current_file = new CuckooTable(target_file_name, false);
    break;
  }
  return current_file;

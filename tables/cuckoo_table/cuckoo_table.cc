@@ -4,7 +4,7 @@
 
 #include "tables/cuckoo_table.h"
 
-CuckooTable::CuckooTable(std::string fname) : Table(fname) {
+CuckooTable::CuckooTable(std::string fname, bool b) : Table(fname, b) {
 
 }
 

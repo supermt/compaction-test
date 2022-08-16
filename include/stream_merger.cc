@@ -119,7 +119,7 @@ uint64_t BaselineMerger::MergeEntries() {
  }
  // heap is built, and all files are added into the heap
  std::string result_block;
- PlainTable output_file(fileNameCreator->NextFileName());
+ PlainTable output_file(fileNameCreator->NextFileName(), false);
  std::string current_entry;
  ArbitrationAction action;
  std::string next_entry;

@@ -19,14 +19,15 @@ Table::Table(const std::string &fname, bool read) : file_name(fname) {
 int Table::WriteToDisk(const std::string &data_pack) const {
  int write_bytes = write(target_fd, data_pack.data(), data_pack.size());
  assert(write_bytes != -1);
+ Flush();
  return write_bytes;
 }
 
 uint64_t Table::ReadFromDisk(std::string *result_buffer, uint64_t file_length) const {
- char *buffer = new char(file_length);
- int readed_bytes = read(target_fd, buffer, file_length);
- *result_buffer = std::string(buffer);
- delete buffer;
+// char *buffer = new char(file_length);
+ int readed_bytes = read(target_fd, result_buffer->data(), file_length);
+// *result_buffer = std::string(buffer);
+// delete buffer;
  assert(readed_bytes != -1);
  return readed_bytes;
 }
@@ -67,6 +68,10 @@ void Table::ToOnBoardFormat(std::string *result_buffer) const {
   result_buffer->append(result.content_block);
  }
  delete result_list;
+}
+
+void Table::Flush() const {
+ fsync(target_fd);
 }
 
 

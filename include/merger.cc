@@ -22,6 +22,7 @@ uint64_t Merger::DoCompaction() {
 
 
 Merger::Merger(std::vector<std::string> input_fnames, TableFormat tableFormat, FileNameCreator *file_name_handler) {
+ this->fileNameCreator_ = file_name_handler;
  format = tableFormat;
  for (auto input_fname: input_fnames) {
   input_files.push_back(CreateFilePointerFromName(input_fname));
@@ -61,7 +62,7 @@ uint64_t Merger::WriteOutResult() {
   for (size_t j = 0; j < block_num; j++) {
    temp.append(data_pack->at(j).content_block);
   }
-  Table *temp_ptr = CreateFilePointerFromName(fileNameCreator->NextFileName());
+  Table *temp_ptr = CreateFilePointerFromName(fileNameCreator_->NextFileName());
   uint32_t last_entry_count = 0;
   temp_ptr->FromOnBoardBlocks(Slice(temp), &last_entry_count);
  }

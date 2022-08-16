@@ -14,6 +14,7 @@
 
 BaselineMerger::BaselineMerger(std::vector<std::string> input_files, FileNameCreator *fileNameCreator) : Merger(
     input_files, kPlain, fileNameCreator) {
+ this->fileNameCreator_ = fileNameCreator;
 }
 
 inline int NextEntry(PlainTable *table, std::string *entry) {
@@ -29,20 +30,20 @@ namespace stream_merger_heap {
   public:
     int operator()(const entry_file_pair &p1, const entry_file_pair &p2) {
 
-     ParsedInternalKey *p1_key = new ParsedInternalKey();
-     ParsedInternalKey *p2_key = new ParsedInternalKey();
-     ParseInternalKey(Slice(p1.first.data(), FULL_KEY_LENGTH), p1_key);
-     ParseInternalKey(Slice(p1.first.data(), FULL_KEY_LENGTH), p2_key);
+     ParsedInternalKey p1_key;
+     ParsedInternalKey p2_key;
+     ParseInternalKey(Slice(p1.first.data(), FULL_KEY_LENGTH), &p1_key);
+     ParseInternalKey(Slice(p1.first.data(), FULL_KEY_LENGTH), &p2_key);
 
-     int r = p1_key->user_key.compare(p2_key->user_key);
+     int r = p1_key.user_key.compare(p2_key.user_key);
      if (r == 0) {
-      if (p1_key->sequence > p2_key->sequence) {
+      if (p1_key.sequence > p2_key.sequence) {
        r = -1;
-      } else if (p1_key->sequence < p2_key->sequence) {
+      } else if (p1_key.sequence < p2_key.sequence) {
        r = +1;
-      } else if (p1_key->type > p2_key->type) {
+      } else if (p1_key.type > p2_key.type) {
        r = -1;
-      } else if (p1_key->type < p2_key->type) {
+      } else if (p1_key.type < p2_key.type) {
        r = +1;
       }
      }
@@ -59,6 +60,7 @@ BaselineMerger::ArbitrationAction BaselineMerger::Arbitration(const std::string 
  // return -1 for last entry has been removed
  // return 0 for nothing happen
  // return 1 for current entry will be removed
+ if (current_entry.empty() || last_entry.empty()) return kAcceptEntry;
  ParsedInternalKey last;
  ParsedInternalKey current;
  ParseInternalKey(Slice(last_entry.data(), FULL_KEY_LENGTH), &last);
@@ -109,7 +111,6 @@ uint64_t BaselineMerger::MergeEntries() {
   entries_read_out = NextEntry(plain_file, &current_entry);
 
   if (entries_read_out == 0) {
-   input_plain_files.erase(std::find(input_plain_files.begin(), input_plain_files.end(), plain_file));
    // doesn't sure it will work or not
   } else {
    // read out at least one entry from the files
@@ -119,28 +120,36 @@ uint64_t BaselineMerger::MergeEntries() {
  }
  // heap is built, and all files are added into the heap
  std::string result_block;
- PlainTable output_file(fileNameCreator->NextFileName(), false);
+ std::string next_file_name = fileNameCreator_->NextFileName();
+ PlainTable output_file(next_file_name, false);
  std::string current_entry;
  ArbitrationAction action;
- std::string next_entry;
  while (!heap.empty()) {
   if (result_block.size() > BLOCK_SIZE) {
    AppendOutput(&output_file, result_block);
    result_block.clear();
   }
   auto heap_head = heap.top();
-  current_entry = heap.top().first;
-  action = Arbitration(current_entry);
-//   result_block.append(heap.top().first);
-  // after Arbitration, the last_entry is same as the current entry
-  if (action == kAcceptEntry) {
-   result_block.append(last_entry);
-  }
+  std::string next_entry;
   auto entries = NextEntry(heap_head.second, &next_entry);
-  if (entries > 0) {
-   heap.emplace(next_entry, heap_head.second);
-  }
+//  if (entries > 0) {
+//   heap.emplace(next_entry, heap_head.second);
+//  }
+  heap.push(std::make_pair(next_entry, heap_head.second));
   heap.pop();
+
+//  current_entry = heap.top().first;
+//  action = Arbitration(current_entry);
+////   result_block.append(heap.top().first);
+//  // after Arbitration, the last_entry is same as the current entry
+//  if (action == kAcceptEntry) {
+//   result_block.append(last_entry);
+//  }
+//  std::string next_entry;
+//  auto entries = NextEntry(heap_head.second, &next_entry);
+//  if (entries > 0) {
+//   heap.emplace(next_entry, heap_head.second);
+//  }
  }
 
  AppendOutput(&output_file, result_block);

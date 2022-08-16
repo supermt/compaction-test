@@ -53,8 +53,8 @@ DEFINE_int64(bench_threads, 1, "number of working threads");
 
 DEFINE_double(span_range, 1.0, "The overlapping range of ");
 DEFINE_double(min_value, 0, "The min values of the key range");
-DEFINE_uint64(distinct_num, ENTRIES_PER_FILE * 4, "number of distinct entries");
-DEFINE_string(benchmark, "baseline,gear", "baseline merger");
+DEFINE_uint64(distinct_num, ENTRIES_PER_FILE * 2, "number of distinct entries");
+DEFINE_string(benchmark, "baseline", "baseline merger");
 
 // Key size settings.
 DEFINE_int32(key_size, 8, "size of each user key");
@@ -177,8 +177,10 @@ void FPGAMerger() {
 
 void BaselineMergeTask() {
  std::cout << "start" << std::endl;
-
+ std::string cmd = "rm -rf " + FLAGS_db_path;
+ system(cmd.c_str());
  std::filesystem::create_directories(FLAGS_db_path);
+ std::filesystem::create_directories(FLAGS_db_path + "/results");
  FileNameCreator file_name_handler(FLAGS_db_path);
  Random64 rand(FLAGS_seed);
 
@@ -190,7 +192,7 @@ void BaselineMergeTask() {
  std::vector<uint64_t> start_posi(FLAGS_bench_threads);
  uint64_t range_step = FLAGS_distinct_num / FLAGS_bench_threads;
  std::vector<std::string> input_files;
- FLAGS_table_format_enum = StringToRepFactory(FLAGS_table_format.c_str());
+ FLAGS_table_format_enum = kPlain;
  // create the files
  for (int i = 0; i < FLAGS_bench_threads; i++) {
   start_posi.push_back(range_step);
@@ -202,8 +204,8 @@ void BaselineMergeTask() {
  auto end = std::chrono::steady_clock::now();
  std::chrono::duration<double> elapsed_seconds = end - start;
  std::cout << "File Creation Time(sec): " << elapsed_seconds.count() << std::endl;
-
- BaselineMerger merger(input_files, &file_name_handler);
+ FileNameCreator output_files(FLAGS_db_path + "/results");
+ BaselineMerger merger(input_files, &output_files);
  merger.GenerateFilterArgs(kRemoveRedundant, FilterArgs());
  start = std::chrono::steady_clock::now();
  merger.DoCompaction();

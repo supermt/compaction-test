@@ -90,7 +90,7 @@ public:
 
 
 protected:
-  FileNameCreator *fileNameCreator;
+  FileNameCreator *fileNameCreator_;
 
 //  std::vector<std::string> CreateInputFileNames(uint64_t number_of_input_files) const;
 

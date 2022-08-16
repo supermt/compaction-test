@@ -17,6 +17,8 @@ public:
 
   virtual ~Table();
 
+  void Flush() const;
+
   uint64_t ReadFromDisk(std::string *result_buffer, uint64_t read_length) const;
 
   uint64_t FromOnBoardBlocks(const Slice &data_pack, uint32_t *last_entry_count);
@@ -34,6 +36,8 @@ public:
   int target_fd;
   std::string file_name;
   int num_of_blocks = 0;
+
+  void Flush();
 };
 
 

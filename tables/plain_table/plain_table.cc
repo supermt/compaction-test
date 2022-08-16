@@ -16,6 +16,6 @@ int PlainTable::FromDiskFormat(const Slice &data_pack, uint32_t *last_entry_coun
  return 0;
 }
 
-PlainTable::PlainTable(std::string fname, bool read) : Table(fname, read) {
+PlainTable::PlainTable(const std::string &fname, bool read) : Table(fname, read) {
 
 }

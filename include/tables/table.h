@@ -19,7 +19,7 @@ public:
 
   void Flush() const;
 
-  uint64_t ReadFromDisk(std::string *result_buffer, uint64_t read_length) const;
+  uint64_t ReadFromDisk(std::string &result_buffer, uint64_t read_length) const;
 
   uint64_t FromOnBoardBlocks(const Slice &data_pack, uint32_t *last_entry_count);
 

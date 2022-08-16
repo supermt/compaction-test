@@ -42,7 +42,7 @@ uint64_t Merger::PrepareFiles() {
  for (auto file: input_files) {
   std::string file_content;
   uint64_t last_entry_num;
-  file->ReadFromDisk(&file_content, last_entry_num);
+  file->ReadFromDisk(file_content, last_entry_num);
   Slice disk_data_pack(file_content.data(), file_content.size());
   // fill the key/value array
   file->FromDiskFormat(disk_data_pack, reinterpret_cast<uint32_t *>(&last_entry_num));

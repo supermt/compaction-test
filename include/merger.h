@@ -151,7 +151,7 @@ protected:
     kDeleteCurrent
   };
 
-  ArbitrationAction Arbitration(const std::string &string);
+  ArbitrationAction Arbitration(const std::string &string, Slice &result_buffer);
 };
 
 class FPGA_Stream_Merger : public Merger {

@@ -12,19 +12,20 @@
 #include "tables/gear_table_builder.h"
 #include "tables/plain_table.h"
 
-BaselineMerger::BaselineMerger(std::vector<std::string> input_files, FileNameCreator *fileNameCreator) : Merger(
+BaselineMerger::BaselineMerger(std::vector<std::string> input_files,
+                               FileNameCreator *fileNameCreator) : Merger(
     input_files, kPlain, fileNameCreator) {
  this->fileNameCreator_ = fileNameCreator;
 }
 
-inline int NextEntry(PlainTable *table, std::string *entry) {
+inline int NextEntry(PlainTable *table, std::string &entry) {
  int readed_bytes = table->ReadFromDisk(entry, FULL_KEY_LENGTH + VALUE_LENGTH);
  return readed_bytes / (FULL_KEY_LENGTH + VALUE_LENGTH);
 }
 
 
 namespace stream_merger_heap {
-  typedef std::pair<std::string, PlainTable *> entry_file_pair;
+  typedef std::pair<std::string, int> entry_file_pair;
 
   class KeyComparor {
   public:
@@ -56,7 +57,9 @@ namespace stream_merger_heap {
 
 };
 
-BaselineMerger::ArbitrationAction BaselineMerger::Arbitration(const std::string &current_entry) {
+BaselineMerger::ArbitrationAction
+BaselineMerger::Arbitration(const std::string &current_entry,
+                            Slice &result_buffer) {
  // return -1 for last entry has been removed
  // return 0 for nothing happen
  // return 1 for current entry will be removed
@@ -66,36 +69,46 @@ BaselineMerger::ArbitrationAction BaselineMerger::Arbitration(const std::string 
  ParseInternalKey(Slice(last_entry.data(), FULL_KEY_LENGTH), &last);
  ParseInternalKey(Slice(current_entry.data(), FULL_KEY_LENGTH), &current);
 
- auto temp = last_entry;
- last_entry = current_entry;
  switch (logic_) {
   case kRemoveRedundant: {
    if (last.user_key == current.user_key) {
-    abandoned_entries.push_back(temp);
+    abandoned_entries.push_back(last_entry);
+    result_buffer = InternalKey(last.user_key, last.sequence,
+                                kTypeDeletion).Encode();
     return kDeleteLast;
    } else {
+    result_buffer = last_entry;
     return kAcceptEntry;
    }
   }
   case kDeletePrefix: {
-   if (current.user_key.starts_with(bound_.prefix)) {
+   // the arbitration only determines the existing of last key
+   if (last.user_key.starts_with(bound_.prefix)) {
     abandoned_entries.push_back(last_entry);
-    return kDeleteCurrent;
+    result_buffer = InternalKey(last.user_key, last.sequence,
+                                kTypeDeletion).Encode();
+    return kDeleteLast;
    } else {
+    result_buffer = last_entry;
     return kAcceptEntry;
    }
   }
   case kDeleteVersion: {
-   if (last.user_key.starts_with(bound_.prefix) && last.user_key == current.user_key) {
-    // redundant keys, within the key range
-    if (last.sequence < bound_.seq) {
-     abandoned_entries.push_back(temp);
-     return kDeleteLast;
-    }
-    if (current.sequence >= bound_.seq) {
-     return kAcceptEntry;
-    }
-   }
+   if (last.user_key.starts_with(bound_.prefix)) {
+    // last key is in the key range
+    if (last.user_key == current.user_key) {
+     // last key is redundant
+     if (last.sequence < bound_.seq) {
+      // and the last key is in the invalid sequence
+      abandoned_entries.push_back(last_entry);
+      result_buffer = InternalKey(last.user_key, last.sequence,
+                                  kTypeDeletion).Encode();
+      return kDeleteLast;
+     } // not in the invalid sequence
+    }// not repeating use key
+   }//not in the prefix
+   result_buffer = last_entry;
+   return kAcceptEntry;
   }
  }
 
@@ -106,15 +119,16 @@ uint64_t BaselineMerger::MergeEntries() {
  // The filtering of arbitration is inside the merge process
  int entries_read_out;
  stream_merger_heap::entry_file_heap heap;
+ int fid = 0;
  for (auto &plain_file: input_plain_files) {
   std::string current_entry;
-  entries_read_out = NextEntry(plain_file, &current_entry);
+  entries_read_out = NextEntry(plain_file, current_entry);
 
   if (entries_read_out == 0) {
    // doesn't sure it will work or not
   } else {
    // read out at least one entry from the files
-   heap.emplace(current_entry, plain_file);
+   heap.emplace(current_entry, fid);
   }
 
  }
@@ -123,33 +137,28 @@ uint64_t BaselineMerger::MergeEntries() {
  std::string next_file_name = fileNameCreator_->NextFileName();
  PlainTable output_file(next_file_name, false);
  std::string current_entry;
+ std::string next_entry;
  ArbitrationAction action;
+
  while (!heap.empty()) {
   if (result_block.size() > BLOCK_SIZE) {
    AppendOutput(&output_file, result_block);
    result_block.clear();
   }
   auto heap_head = heap.top();
-  std::string next_entry;
-  auto entries = NextEntry(heap_head.second, &next_entry);
-//  if (entries > 0) {
-//   heap.emplace(next_entry, heap_head.second);
-//  }
-  heap.push(std::make_pair(next_entry, heap_head.second));
+
+  current_entry = heap_head.first;
+  Slice result_buffer;
+  Arbitration(current_entry, result_buffer);
+  result_block.append(result_buffer.data(), result_buffer.size());
+
+  auto entries = NextEntry(input_plain_files[heap_head.second], next_entry);
+  if (entries > 0) {
+   heap.emplace(next_entry, heap_head.second);
+  }
+//  heap.emplace(next_entry, heap_head.second);
   heap.pop();
 
-//  current_entry = heap.top().first;
-//  action = Arbitration(current_entry);
-////   result_block.append(heap.top().first);
-//  // after Arbitration, the last_entry is same as the current entry
-//  if (action == kAcceptEntry) {
-//   result_block.append(last_entry);
-//  }
-//  std::string next_entry;
-//  auto entries = NextEntry(heap_head.second, &next_entry);
-//  if (entries > 0) {
-//   heap.emplace(next_entry, heap_head.second);
-//  }
  }
 
  AppendOutput(&output_file, result_block);
@@ -173,7 +182,8 @@ uint64_t BaselineMerger::DoCompaction() {
 
 
 // the stream merger is the merger that will transport piece by piece, and wait for the results from FPGA
-FPGA_Stream_Merger::FPGA_Stream_Merger(std::vector<std::string> input_files, TableFormat format,
+FPGA_Stream_Merger::FPGA_Stream_Merger(std::vector<std::string> input_files,
+                                       TableFormat format,
                                        FileNameCreator *fileNameHandler,
                                        ssize_t file_window_size)
     : Merger(input_files, format, fileNameHandler) {
@@ -191,7 +201,8 @@ inline void TransportToFPGA(const char *buffer, uint64_t data_size) {
 inline void WaitForFPGA() {}
 
 inline void
-InitialArbitrationCondition(FilterLogic arbitration, FilterArgs values, std::vector<std::string> *abandoned_entries) {
+InitialArbitrationCondition(FilterLogic arbitration, FilterArgs values,
+                            std::vector<std::string> *abandoned_entries) {
  // pass the arguments for the arbitration
 // enum FilterLogic : int {
 //   kRemoveRedundant = 0x0,
@@ -210,14 +221,16 @@ uint64_t FPGA_Stream_Merger::DoCompaction() {
  //read the files with a fixed file_window_size
  int read_bytes = -1;
  // Init the compaction job on FPGA
- InitialArbitrationCondition(this->logic_, this->bound_, &abandoned_entries_for_FPGA);
+ InitialArbitrationCondition(this->logic_, this->bound_,
+                             &abandoned_entries_for_FPGA);
 
  while (read_bytes != 0) {
   read_bytes = 0;
   buffer.clear();
   for (ssize_t fid = 0; fid < input_files.size(); fid++) {
    std::string read_buffer;
-   int current_ouput = input_files[fid]->ReadFromDisk(&read_buffer, file_window_size);
+   int current_ouput = input_files[fid]->ReadFromDisk(read_buffer,
+                                                      file_window_size);
    std::reverse(read_buffer.begin(), read_buffer.end());
    std::reverse(read_buffer.begin(), read_buffer.end());
 

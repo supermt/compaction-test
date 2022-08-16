@@ -210,6 +210,7 @@ void BaselineMergeTask() {
  start = std::chrono::steady_clock::now();
  merger.DoCompaction();
  end = std::chrono::steady_clock::now();
+ elapsed_seconds = end - start;
  std::cout << "Merge Time (sec): " << elapsed_seconds.count() << std::endl;
 }
 
@@ -218,7 +219,7 @@ int main(int argc, char **argv) {
  ParseCommandLineFlags(&argc, &argv, true);
 
  auto benchmarks = split(FLAGS_benchmark, ',');
- for (auto benchmark: benchmarks) {
+ for (const auto &benchmark: benchmarks) {
   if (benchmark == "gear") { FPGAMerger(); }
   else if (benchmark == "baseline") { BaselineMergeTask(); }
  }

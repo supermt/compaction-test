@@ -15,7 +15,7 @@ public:
 
   int FromDiskFormat(const Slice &data_pack, uint32_t *last_entry_count) override;
 
-  explicit PlainTable(std::string fname, bool b);
+  explicit PlainTable(const std::string& fname, bool b);
 };
 
 

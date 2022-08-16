@@ -6,13 +6,19 @@
 
 KeyGenerator::KeyGenerator(Random64 *rand, WriteMode mode, uint64_t num,
                            uint64_t seed, int key_size, uint64_t min_value)
-    : rand_(rand), mode_(mode), distinct_num_(num), next_(min_value) {
+    : rand_(rand), mode_(mode), min_(min_value), distinct_num_(num), next_(0) {
  if (mode_ == UNIQUE_RANDOM) {
   values_.resize(distinct_num_);
   for (uint64_t i = min_value; i < distinct_num_; ++i) {
    values_[i] = i;
   }
   RandomShuffle(values_.begin(), values_.end(), static_cast<uint32_t>(seed));
+ } else if (mode_ == INCREMENTAL_RANDOM) {
+  values_.resize(distinct_num_);
+  for (uint64_t i = min_value; i < distinct_num_; ++i) {
+   values_[i] = rand_->Next() % num + min_value;
+  }
+  std::sort(values_.begin(), values_.end());
  }
  key_size_ = key_size;
  key_slice_ = AllocateKey(&key_guard, key_size_);

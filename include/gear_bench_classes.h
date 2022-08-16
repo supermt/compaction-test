@@ -21,7 +21,7 @@
 #include "db_format/dbformat.h"
 
 enum WriteMode {
-  RANDOM, SEQUENTIAL, UNIQUE_RANDOM
+  RANDOM, SEQUENTIAL, UNIQUE_RANDOM, INCREMENTAL_RANDOM
 };
 
 class KeyGenerator {
@@ -34,10 +34,13 @@ public:
   virtual uint64_t Next() {
    switch (mode_) {
     case SEQUENTIAL:
-     return next_++;
+     return min_ + (next_++);
     case RANDOM:
      return rand_->Next() % distinct_num_;
     case UNIQUE_RANDOM:
+     assert(next_ < distinct_num_);
+     return values_[next_++];
+    case INCREMENTAL_RANDOM:
      assert(next_ < distinct_num_);
      return values_[next_++];
    }

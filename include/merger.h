@@ -103,9 +103,9 @@ protected:
 
   virtual uint64_t MergeEntries();
 
-  virtual uint64_t PrepareFiles();
+  virtual uint64_t PrepareFiles() = 0;
 
-  virtual uint64_t WriteOutResult();
+  virtual uint64_t WriteOutResult() = 0;
 
   virtual uint64_t DoFilter();
 
@@ -144,6 +144,10 @@ protected:
   uint64_t PrepareFiles() override;
 
   uint64_t MergeEntries() override;
+
+  uint64_t WriteOutResult() override {
+   return 0;
+  }
 
   enum ArbitrationAction : int {
     kDeleteLast,

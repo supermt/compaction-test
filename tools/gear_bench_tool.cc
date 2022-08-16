@@ -53,7 +53,9 @@ DEFINE_int64(bench_threads, 1, "number of working threads");
 
 DEFINE_double(span_range, 1.0, "The overlapping range of ");
 DEFINE_double(min_value, 0, "The min values of the key range");
-DEFINE_uint64(distinct_num, ENTRIES_PER_FILE * 2, "number of distinct entries");
+DEFINE_uint64(entries_per_file, 10000, "number of distinct entries");
+DEFINE_uint64(distinct_num, FLAGS_entries_per_file * 2,
+              "number of distinct entries");
 DEFINE_string(benchmark, "baseline", "baseline merger");
 
 // Key size settings.
@@ -98,9 +100,12 @@ inline Table *CreateTablePtr(const std::string &target_file_name) {
  return current_file;
 }
 
-void generate_files(uint64_t start_key, uint64_t range, Random64 *rand, FileNameCreator *file_name_handler,
+void generate_files(uint64_t start_key, uint64_t range, Random64 *rand,
+                    FileNameCreator *file_name_handler,
                     std::vector<std::string> *input_file_names) {
- KeyGenerator key_gen(rand, SEQUENTIAL, range, FLAGS_seed, KEY_CONTENT_LENGTH, start_key);
+ KeyGenerator key_gen(rand, INCREMENTAL_RANDOM, range, FLAGS_seed,
+                      KEY_CONTENT_LENGTH,
+                      start_key);
  uint64_t generated_entries = 0;
  // create the files
  Random32 seq_rand(FLAGS_seed);
@@ -111,13 +116,13 @@ void generate_files(uint64_t start_key, uint64_t range, Random64 *rand, FileName
   input_file_names->push_back(target_file_name);
 
   Table *current_file = CreateTablePtr(target_file_name);
-  for (uint64_t i = 0; i < ENTRIES_PER_FILE; i++) {
+  for (uint64_t i = 0; i < FLAGS_entries_per_file; i++) {
    if (generated_entries >= range) {
     break;
    }
    //   Slice value = Slice("1234554321", VALUE_LENGTH);
    InternalKey ikey;
-   ikey.Set(key_gen.NextString(), seq_list[seq_rand.Next() % 10], kTypeValue);
+   ikey.Set(key_gen.NextString(), kMaxSequenceNumber - 1, kTypeValue);
    current_file->key_list.push_back(ikey.Encode());
    current_file->value_list.emplace_back("v1v2v3v4v5", 10);
    generated_entries++;
@@ -165,7 +170,8 @@ void FPGAMerger() {
  for (int i = 0; i < FLAGS_bench_threads; i++) {
   start_posi.push_back(range_step);
 //  generate_files(start_posi[i], range_step, &rand, &file_name_handler, &input_files);
-  std::thread t(generate_files, start_posi[i], range_step, &rand, &file_name_handler, &input_files);
+  std::thread t(generate_files, start_posi[i], range_step, &rand,
+                &file_name_handler, &input_files);
   t.join();
  }
 
@@ -197,13 +203,15 @@ void BaselineMergeTask() {
  for (int i = 0; i < FLAGS_bench_threads; i++) {
   start_posi.push_back(range_step);
 //  generate_files(start_posi[i], range_step, &rand, &file_name_handler, &input_files);
-  std::thread t(generate_files, start_posi[i], range_step, &rand, &file_name_handler, &input_files);
+  std::thread t(generate_files, start_posi[i], range_step, &rand,
+                &file_name_handler, &input_files);
   t.join();
  }
 
  auto end = std::chrono::steady_clock::now();
  std::chrono::duration<double> elapsed_seconds = end - start;
- std::cout << "File Creation Time(sec): " << elapsed_seconds.count() << std::endl;
+ std::cout << "File Creation Time(sec): " << elapsed_seconds.count()
+           << std::endl;
  FileNameCreator output_files(FLAGS_db_path + "/results");
  BaselineMerger merger(input_files, &output_files);
  merger.GenerateFilterArgs(kRemoveRedundant, FilterArgs());

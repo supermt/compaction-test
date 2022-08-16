@@ -151,16 +151,15 @@ uint64_t BaselineMerger::MergeEntries() {
   Slice result_buffer;
   Arbitration(current_entry, result_buffer);
   result_block.append(result_buffer.data(), result_buffer.size());
-
+  last_entry = current_entry;
   auto entries = NextEntry(input_plain_files[heap_head.second], next_entry);
   if (entries > 0) {
    heap.emplace(next_entry, heap_head.second);
   }
 //  heap.emplace(next_entry, heap_head.second);
   heap.pop();
-
  }
-
+ result_block.append(current_entry);
  AppendOutput(&output_file, result_block);
 
 

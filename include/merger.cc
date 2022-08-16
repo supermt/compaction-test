@@ -21,7 +21,8 @@ uint64_t Merger::DoCompaction() {
 }
 
 
-Merger::Merger(std::vector<std::string> input_fnames, TableFormat tableFormat, FileNameCreator *file_name_handler) {
+Merger::Merger(std::vector<std::string> input_fnames, TableFormat tableFormat,
+               FileNameCreator *file_name_handler) {
  this->fileNameCreator_ = file_name_handler;
  format = tableFormat;
  for (auto input_fname: input_fnames) {
@@ -36,40 +37,6 @@ uint64_t Merger::MergeEntries() {
  merge_by_min_heap(input_files, &pq);
  return 0;
 }
-
-uint64_t Merger::PrepareFiles() {
- size_t total_entries = 0;
- for (auto file: input_files) {
-  std::string file_content;
-  uint64_t last_entry_num;
-  file->ReadFromDisk(file_content, last_entry_num);
-  Slice disk_data_pack(file_content.data(), file_content.size());
-  // fill the key/value array
-  file->FromDiskFormat(disk_data_pack, reinterpret_cast<uint32_t *>(&last_entry_num));
-  total_entries += file->key_list.size();
- }
-
- return total_entries;
-}
-
-uint64_t Merger::WriteOutResult() {
- auto data_pack = new std::vector<OnBoardBlock>();
- ComposeOnBoardBlock(result_keys, result_values, data_pack);
-
- for (size_t i = 0; i < this->result_keys.size(); i += ENTRIES_PER_FILE) {
-  std::string temp;
-  size_t block_num = ENTRIES_PER_FILE + i > result_keys.size() ? result_keys.size() - i : ENTRIES_PER_FILE;
-  for (size_t j = 0; j < block_num; j++) {
-   temp.append(data_pack->at(j).content_block);
-  }
-  Table *temp_ptr = CreateFilePointerFromName(fileNameCreator_->NextFileName());
-  uint32_t last_entry_count = 0;
-  temp_ptr->FromOnBoardBlocks(Slice(temp), &last_entry_count);
- }
-
- return 0;
-}
-
 
 Table *Merger::CreateFilePointerFromName(std::string fname) const {
  Table *temp_ptr;
@@ -115,12 +82,14 @@ uint64_t Merger::DoFilter() {
  return 0;
 }
 
-void Merger::GenerateFilterArgs(FilterLogic judgement_logic, FilterArgs judement_arg) {
+void Merger::GenerateFilterArgs(FilterLogic judgement_logic,
+                                FilterArgs judement_arg) {
  logic_ = judgement_logic;
  bound_ = judement_arg;
 }
 
-void Merger::DropRedundantKeys(std::pair<Slice *, Slice *> current_pair, Slice last_key) {
+void Merger::DropRedundantKeys(std::pair<Slice *, Slice *> current_pair,
+                               Slice last_key) {
 
  ParsedInternalKey parsed_current;
  ParsedInternalKey parsed_last;
@@ -145,7 +114,8 @@ void Merger::DropWithPrefix(std::pair<Slice *, Slice *> current_pair) {
 
 }
 
-void Merger::PickUniqueVersion(std::pair<Slice *, Slice *> current_pair, Slice last_key) {
+void Merger::PickUniqueVersion(std::pair<Slice *, Slice *> current_pair,
+                               Slice last_key) {
 
  ParsedInternalKey parsed_current;
  ParsedInternalKey parsed_last;
@@ -153,7 +123,8 @@ void Merger::PickUniqueVersion(std::pair<Slice *, Slice *> current_pair, Slice l
  ParseInternalKey(last_key, &parsed_current);
 
 
- if (parsed_current.user_key.starts_with(bound_.prefix) && parsed_current.sequence <= bound_.seq) {
+ if (parsed_current.user_key.starts_with(bound_.prefix) &&
+     parsed_current.sequence <= bound_.seq) {
 
   if (redundant_user_keys.back().first == parsed_current.user_key) {
    abandoned_values.emplace_back(redundant_user_keys.back());
@@ -173,6 +144,7 @@ void Merger::PickUniqueVersion(std::pair<Slice *, Slice *> current_pair, Slice l
 
 std::string FileNameCreator::NextFileName() {
  std::ostringstream ostr;
- ostr << base_dir << "/" << std::setfill('0') << std::setw(8) << file_number.fetch_add(1) << ".sst";
+ ostr << base_dir << "/" << std::setfill('0') << std::setw(8)
+      << file_number.fetch_add(1) << ".sst";
  return ostr.str();
 }

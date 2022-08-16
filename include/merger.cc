@@ -15,8 +15,8 @@
 uint64_t Merger::DoCompaction() {
  PrepareFiles();
  MergeEntries();
- WriteOutResult();
  DoFilter();
+ WriteOutResult();
  return 0;
 }
 

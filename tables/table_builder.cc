@@ -5,6 +5,7 @@
 #include "tables/table.h"
 
 Table::~Table() {
+ fsync(target_fd);
  close(target_fd);
 }
 

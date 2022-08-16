@@ -8,6 +8,7 @@
 #include <atomic>
 #include <utility>
 #include "tables/table.h"
+#include "tables/plain_table.h"
 
 enum FilterLogic : int {
   kRemoveRedundant = 0x0,
@@ -73,8 +74,10 @@ namespace heap_merger {
      pq->emplace(std::make_pair(file->key_list.data() + i, file->value_list.data() + i));
     }
    }
-
   }
+
+  typedef std::priority_queue<kv_pair, std::vector<kv_pair>, KeyComparor> kv_pair_heap;
+
 };
 
 class Merger {
@@ -95,13 +98,13 @@ public:
 
   void DropWithPrefix(std::pair<Slice *, Slice *> pair);
 
-  uint64_t MergeEntries();
+  virtual uint64_t MergeEntries();
 
-  uint64_t PrepareFiles();
+  virtual uint64_t PrepareFiles();
 
-  uint64_t WriteOutResult();
+  virtual uint64_t WriteOutResult();
 
-  uint64_t DoFilter();
+  virtual uint64_t DoFilter();
 
   std::vector<Table *> input_files;
   std::vector<Slice> result_keys;
@@ -120,12 +123,40 @@ public:
 };
 
 class BaselineMerger : public Merger {
+public:
+  BaselineMerger(std::vector<std::string> input_files, FileNameCreator *fileNameCreator, ssize_t file_window_size);
+
+  ssize_t file_window_size;
+
+  uint64_t DoCompaction() override;
+
+  std::vector<PlainTable *> input_plain_files;
+  std::string buffer;
+  std::vector<std::string> abandoned_entries;
+  std::vector<std::string> file_iterators;
+  std::string last_entry;
+
+  uint64_t AppendOutput(PlainTable *output_file, std::string result_block) {
+   return output_file->WriteToDisk(result_block);
+  };
+
+  uint64_t PrepareFiles() override;
+
+  uint64_t MergeEntries() override;
+
+  enum ArbitrationAction : int {
+    kDeleteLast,
+    kAcceptEntry,
+    kDeleteCurrent
+  };
+
+  ArbitrationAction Arbitration(const std::string &string);
 };
 
 class FPGA_Stream_Merger : public Merger {
 public:
   FPGA_Stream_Merger(std::vector<std::string> input_files, TableFormat format,
-                     FileNameCreator *fileNameHandler, ssize_t memory_budget);
+                     FileNameCreator *fileNameHandler, ssize_t file_window_size);
 
   ssize_t file_window_size;
 
@@ -133,6 +164,8 @@ public:
   std::vector<std::string> abandoned_entries_for_FPGA;
 
   uint64_t DoCompaction() override;
+
+  uint64_t MergeEntries() override;
 
 };
 

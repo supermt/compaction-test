@@ -308,7 +308,7 @@ inline bool ParseInternalKey(const Slice &internal_key,
  unsigned char c = num & 0xff;
  result->sequence = num >> 8;
  result->type = static_cast<ValueType>(c);
- assert(result->type <= ValueType::kMaxValue);
+// assert(result->type <= ValueType::kMaxValue);
  result->user_key = Slice(internal_key.data(), n - 8);
  return IsExtendedValueType(result->type);
 }

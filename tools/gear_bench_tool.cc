@@ -53,8 +53,8 @@ DEFINE_int64(bench_threads, 1, "number of working threads");
 
 DEFINE_double(span_range, 1.0, "The overlapping range of ");
 DEFINE_double(min_value, 0, "The min values of the key range");
-DEFINE_uint64(entries_per_file, 10000, "number of distinct entries");
-DEFINE_uint64(distinct_num, FLAGS_entries_per_file * 2,
+DEFINE_uint64(entries_per_file, 100000, "number of distinct entries");
+DEFINE_uint64(distinct_num, FLAGS_entries_per_file * 20,
               "number of distinct entries");
 DEFINE_string(benchmark, "baseline", "baseline merger");
 

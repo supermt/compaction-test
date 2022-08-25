@@ -57,6 +57,16 @@ namespace stream_merger_heap {
 
 };
 
+inline Slice
+EncodeDeletedKey(ParsedInternalKey &deleted_key, std::string &last_entry) {
+ std::string last_key = InternalKey(deleted_key.user_key, deleted_key.sequence,
+                                    kTypeDeletion).Encode().ToString();
+
+ last_key.append(last_entry.data() + FULL_KEY_LENGTH,
+                 VALUE_LENGTH);
+ return {last_key.data(), FULL_KEY_LENGTH + VALUE_LENGTH};
+}
+
 BaselineMerger::ArbitrationAction
 BaselineMerger::Arbitration(const std::string &current_entry,
                             Slice &result_buffer) {
@@ -73,8 +83,13 @@ BaselineMerger::Arbitration(const std::string &current_entry,
   case kRemoveRedundant: {
    if (last.user_key == current.user_key) {
     abandoned_entries.push_back(last_entry);
-    result_buffer = InternalKey(last.user_key, last.sequence,
-                                kTypeDeletion).Encode();
+//    std::string last_key = InternalKey(last.user_key, last.sequence,
+//                                       kTypeDeletion).Encode().ToString();
+//
+//    last_key.append(last_entry.data() + FULL_KEY_LENGTH,
+//                    VALUE_LENGTH);
+    result_buffer = EncodeDeletedKey(last, last_entry);
+//        Slice(last_key.data(), FULL_KEY_LENGTH + VALUE_LENGTH);
     return kDeleteLast;
    } else {
     result_buffer = last_entry;
@@ -85,8 +100,7 @@ BaselineMerger::Arbitration(const std::string &current_entry,
    // the arbitration only determines the existing of last key
    if (last.user_key.starts_with(bound_.prefix)) {
     abandoned_entries.push_back(last_entry);
-    result_buffer = InternalKey(last.user_key, last.sequence,
-                                kTypeDeletion).Encode();
+    result_buffer = EncodeDeletedKey(last, last_entry);
     return kDeleteLast;
    } else {
     result_buffer = last_entry;
@@ -101,8 +115,7 @@ BaselineMerger::Arbitration(const std::string &current_entry,
      if (last.sequence < bound_.seq) {
       // and the last key is in the invalid sequence
       abandoned_entries.push_back(last_entry);
-      result_buffer = InternalKey(last.user_key, last.sequence,
-                                  kTypeDeletion).Encode();
+      result_buffer = EncodeDeletedKey(last, last_entry);
       return kDeleteLast;
      } // not in the invalid sequence
     }// not repeating use key
@@ -122,6 +135,7 @@ uint64_t BaselineMerger::MergeEntries() {
  int fid = 0;
  for (auto &plain_file: input_plain_files) {
   std::string current_entry;
+//  std::cout << plain_file->file_name << std::endl;
   entries_read_out = NextEntry(plain_file, current_entry);
 
   if (entries_read_out == 0) {
@@ -139,7 +153,7 @@ uint64_t BaselineMerger::MergeEntries() {
  std::string current_entry;
  std::string next_entry;
  ArbitrationAction action;
-
+ auto processed_entries = input_files.size();
  while (!heap.empty()) {
   if (result_block.size() > BLOCK_SIZE) {
    AppendOutput(&output_file, result_block);
@@ -153,6 +167,7 @@ uint64_t BaselineMerger::MergeEntries() {
   result_block.append(result_buffer.data(), result_buffer.size());
   last_entry = current_entry;
   auto entries = NextEntry(input_plain_files[heap_head.second], next_entry);
+  processed_entries++;
   if (entries > 0) {
    heap.emplace(next_entry, heap_head.second);
   }

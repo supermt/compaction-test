@@ -23,11 +23,12 @@ int Table::WriteToDisk(const std::string &data_pack) const {
  return (int) write_bytes;
 }
 
-uint64_t Table::ReadFromDisk(std::string &result_buffer, uint64_t file_length) const {
+uint64_t
+Table::ReadFromDisk(std::string &result_buffer, uint64_t file_length) const {
  char *buffer = new char[file_length];
  auto readed_bytes = read(target_fd, buffer, (size_t) file_length);
 // *result_buffer = std::string(buffer);
- result_buffer = std::string(buffer);
+ result_buffer = std::string(buffer, file_length);
  delete[] buffer;
  assert(readed_bytes != -1);
  return readed_bytes;
@@ -50,7 +51,8 @@ uint64_t Table::FromOnBoardBlocks(const Slice &data_pack, uint32_t *last) {
   GetFixed32(&temp, &value_length);
   GetFixed32(&temp, &placeholder_length);
   for (uint32_t j = 0; j < *last; j++) {
-   Slice key(data_pack.data() + BLOCK_SIZE - j * (KEY_CONTENT_LENGTH + KEY_SUFFIX_LENGTH),
+   Slice key(data_pack.data() + BLOCK_SIZE -
+             j * (KEY_CONTENT_LENGTH + KEY_SUFFIX_LENGTH),
              (KEY_SUFFIX_LENGTH + KEY_CONTENT_LENGTH));
    Slice value(data_pack.data() + j * VALUE_LENGTH, VALUE_LENGTH);
    key_list.push_back(key);
@@ -72,6 +74,7 @@ void Table::ToOnBoardFormat(std::string *result_buffer) const {
 }
 
 void Table::Flush() const {
+ fdatasync(target_fd);
  fsync(target_fd);
 }
 

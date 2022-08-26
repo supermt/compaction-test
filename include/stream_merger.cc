@@ -18,19 +18,19 @@ BaselineMerger::BaselineMerger(std::vector<std::string> input_files,
  this->fileNameCreator_ = fileNameCreator;
 }
 
-inline int NextEntry(PlainTable *table, std::string &entry) {
+inline int NextEntry(PlainTable *table, Slice &entry) {
 // int readed_bytes = table->ReadFromDisk(entry, FULL_KEY_LENGTH + VALUE_LENGTH);
 // return readed_bytes / (FULL_KEY_LENGTH + VALUE_LENGTH);
- entry = std::string(table->file_content.data() +
-                     table->readed_entries * (FULL_KEY_LENGTH + VALUE_LENGTH),
-                     FULL_KEY_LENGTH + VALUE_LENGTH);
+ entry = Slice(table->file_content.data() +
+               table->readed_entries * (FULL_KEY_LENGTH + VALUE_LENGTH),
+               FULL_KEY_LENGTH + VALUE_LENGTH);
  table->readed_entries++;
  return 1;
 }
 
 
 namespace stream_merger_heap {
-  typedef std::pair<std::string, int> entry_file_pair;
+  typedef std::pair<Slice, int> entry_file_pair;
 
   class KeyComparor {
   public:
@@ -73,11 +73,8 @@ EncodeDeletedKey(ParsedInternalKey &deleted_key, std::string &last_entry) {
 }
 
 BaselineMerger::ArbitrationAction
-BaselineMerger::Arbitration(const std::string &current_entry,
+BaselineMerger::Arbitration(const Slice &current_entry,
                             Slice &result_buffer) {
- // return -1 for last entry has been removed
- // return 0 for nothing happen
- // return 1 for current entry will be removed
  if (current_entry.empty() || last_entry.empty()) return kAcceptEntry;
  ParsedInternalKey last;
  ParsedInternalKey current;
@@ -88,11 +85,6 @@ BaselineMerger::Arbitration(const std::string &current_entry,
   case kRemoveRedundant: {
    if (last.user_key == current.user_key) {
     abandoned_entries.push_back(last_entry);
-//    std::string last_key = InternalKey(last.user_key, last.sequence,
-//                                       kTypeDeletion).Encode().ToString();
-//
-//    last_key.append(last_entry.data() + FULL_KEY_LENGTH,
-//                    VALUE_LENGTH);
     result_buffer = EncodeDeletedKey(last, last_entry);
 //        Slice(last_key.data(), FULL_KEY_LENGTH + VALUE_LENGTH);
     return kDeleteLast;
@@ -140,7 +132,7 @@ uint64_t BaselineMerger::MergeEntries() {
  int fid = 0;
  auto start = std::chrono::steady_clock::now();
  for (auto &plain_file: input_plain_files) {
-  std::string current_entry;
+  Slice current_entry;
   std::cout << plain_file->file_name << std::endl;
   plain_file->ReadFromDisk(plain_file->file_content, 512 * 1024 * 1024ul);
 
@@ -167,8 +159,9 @@ uint64_t BaselineMerger::MergeEntries() {
  std::string result_block;
  std::string next_file_name = fileNameCreator_->NextFileName();
  PlainTable output_file(next_file_name, false);
- std::string current_entry;
- std::string next_entry;
+ Slice current_entry;
+ Slice next_entry;
+
  ArbitrationAction action;
  auto processed_entries = input_files.size();
  while (!heap.empty()) {
@@ -179,23 +172,24 @@ uint64_t BaselineMerger::MergeEntries() {
 
   current_entry = heap_head.first;
   Slice result_buffer;
-  Arbitration(current_entry, result_buffer);
-  result_block.append(result_buffer.data(), result_buffer.size());
-  last_entry = current_entry;
+
   auto entries = NextEntry(input_plain_files[heap_head.second], next_entry);
   processed_entries++;
+  if (processed_entries % 1000000 == 0) {
+   std::cout << "Processed Entries: " << processed_entries << std::endl;
+  }
+
   if (entries > 0) {
    heap.emplace(next_entry, heap_head.second);
   }
 //  heap.emplace(next_entry, heap_head.second);
   heap.pop();
  }
- result_block.append(current_entry);
+
  end = std::chrono::steady_clock::now();
  elapsed_seconds = end - start;
  std::cout << "Merge & Arbitration Time (sec): " << elapsed_seconds.count()
            << std::endl;
-
 
  return 0;
 }

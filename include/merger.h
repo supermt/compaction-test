@@ -28,7 +28,8 @@ public:
   std::atomic<int> file_number;
   const std::string base_dir;
 
-  FileNameCreator(std::string dir_name) : file_number(0), base_dir(std::move(dir_name)) {};
+  FileNameCreator(std::string dir_name) : file_number(0),
+                                          base_dir(std::move(dir_name)) {};
 
   std::string NextFileName();
 };
@@ -68,10 +69,12 @@ namespace heap_merger {
   };
 
   inline void
-  merge_by_min_heap(std::vector<Table *> files, std::priority_queue<kv_pair, std::vector<kv_pair>, KeyComparor> *pq) {
+  merge_by_min_heap(std::vector<Table *> files,
+                    std::priority_queue<kv_pair, std::vector<kv_pair>, KeyComparor> *pq) {
    for (auto file: files) {
     for (size_t i = 0; i < file->key_list.size(); i++) {
-     pq->emplace(std::make_pair(file->key_list.data() + i, file->value_list.data() + i));
+     pq->emplace(std::make_pair(file->key_list.data() + i,
+                                file->value_list.data() + i));
     }
    }
   }
@@ -82,7 +85,8 @@ namespace heap_merger {
 
 class Merger {
 public:
-  Merger(std::vector<std::string> input_fnames, TableFormat format, FileNameCreator *file_name_handler);
+  Merger(std::vector<std::string> input_fnames, TableFormat format,
+         FileNameCreator *file_name_handler);
 
   virtual uint64_t DoCompaction();
 
@@ -122,12 +126,14 @@ protected:
 
   TableFormat format;
 
-  void PickUniqueVersion(std::pair<Slice *, Slice *> current_pair, Slice last_key);
+  void
+  PickUniqueVersion(std::pair<Slice *, Slice *> current_pair, Slice last_key);
 };
 
 class BaselineMerger : public Merger {
 public:
-  BaselineMerger(std::vector<std::string> input_files, FileNameCreator *fileNameCreator);
+  BaselineMerger(std::vector<std::string> input_files,
+                 FileNameCreator *fileNameCreator);
 
   uint64_t DoCompaction() override;
 
@@ -155,13 +161,14 @@ protected:
     kDeleteCurrent
   };
 
-  ArbitrationAction Arbitration(const std::string &string, Slice &result_buffer);
+  ArbitrationAction Arbitration(const Slice &string, Slice &result_buffer);
 };
 
 class FPGA_Stream_Merger : public Merger {
 public:
   FPGA_Stream_Merger(std::vector<std::string> input_files, TableFormat format,
-                     FileNameCreator *fileNameHandler, ssize_t file_window_size);
+                     FileNameCreator *fileNameHandler,
+                     ssize_t file_window_size);
 
   ssize_t file_window_size;
 

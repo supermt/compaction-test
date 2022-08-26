@@ -19,8 +19,13 @@ BaselineMerger::BaselineMerger(std::vector<std::string> input_files,
 }
 
 inline int NextEntry(PlainTable *table, std::string &entry) {
- int readed_bytes = table->ReadFromDisk(entry, FULL_KEY_LENGTH + VALUE_LENGTH);
- return readed_bytes / (FULL_KEY_LENGTH + VALUE_LENGTH);
+// int readed_bytes = table->ReadFromDisk(entry, FULL_KEY_LENGTH + VALUE_LENGTH);
+// return readed_bytes / (FULL_KEY_LENGTH + VALUE_LENGTH);
+ entry = std::string(table->file_content.data() +
+                     table->readed_entries * (FULL_KEY_LENGTH + VALUE_LENGTH),
+                     FULL_KEY_LENGTH + VALUE_LENGTH);
+ table->readed_entries++;
+ return 1;
 }
 
 
@@ -133,9 +138,12 @@ uint64_t BaselineMerger::MergeEntries() {
  int entries_read_out;
  stream_merger_heap::entry_file_heap heap;
  int fid = 0;
+ auto start = std::chrono::steady_clock::now();
  for (auto &plain_file: input_plain_files) {
   std::string current_entry;
-//  std::cout << plain_file->file_name << std::endl;
+  std::cout << plain_file->file_name << std::endl;
+  plain_file->ReadFromDisk(plain_file->file_content, 512 * 1024 * 1024ul);
+
   entries_read_out = NextEntry(plain_file, current_entry);
 
   if (entries_read_out == 0) {
@@ -146,6 +154,15 @@ uint64_t BaselineMerger::MergeEntries() {
   }
 
  }
+ auto end = std::chrono::steady_clock::now();
+
+ std::chrono::duration<double> elapsed_seconds = end - start;
+ std::cout << "File Loading Time (sec): " << elapsed_seconds.count()
+           << std::endl;
+
+ std::cout << "All files loaded" << std::endl;
+ start = std::chrono::steady_clock::now();
+
  // heap is built, and all files are added into the heap
  std::string result_block;
  std::string next_file_name = fileNameCreator_->NextFileName();
@@ -156,7 +173,6 @@ uint64_t BaselineMerger::MergeEntries() {
  auto processed_entries = input_files.size();
  while (!heap.empty()) {
   if (result_block.size() > BLOCK_SIZE) {
-   AppendOutput(&output_file, result_block);
    result_block.clear();
   }
   auto heap_head = heap.top();
@@ -175,7 +191,10 @@ uint64_t BaselineMerger::MergeEntries() {
   heap.pop();
  }
  result_block.append(current_entry);
- AppendOutput(&output_file, result_block);
+ end = std::chrono::steady_clock::now();
+ elapsed_seconds = end - start;
+ std::cout << "Merge & Arbitration Time (sec): " << elapsed_seconds.count()
+           << std::endl;
 
 
  return 0;

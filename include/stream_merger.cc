@@ -18,14 +18,14 @@ BaselineMerger::BaselineMerger(std::vector<std::string> input_files,
  this->fileNameCreator_ = fileNameCreator;
 }
 
-inline int NextEntry(PlainTable *table, Slice &entry) {
+inline uint64_t NextEntry(PlainTable *table, Slice &entry) {
 // int readed_bytes = table->ReadFromDisk(entry, FULL_KEY_LENGTH + VALUE_LENGTH);
 // return readed_bytes / (FULL_KEY_LENGTH + VALUE_LENGTH);
  entry = Slice(table->file_content.data() +
                table->readed_entries * (FULL_KEY_LENGTH + VALUE_LENGTH),
                FULL_KEY_LENGTH + VALUE_LENGTH);
  table->readed_entries++;
- return 1;
+ return table->readed_entries * (FULL_KEY_LENGTH + VALUE_LENGTH);
 }
 
 
@@ -61,6 +61,37 @@ namespace stream_merger_heap {
   typedef std::priority_queue<entry_file_pair, std::vector<entry_file_pair>, KeyComparor> entry_file_heap;
 
 };
+namespace slice_merge_heap {
+  class KeyComparor {
+  public:
+    int operator()(const Slice &p1, const Slice &p2) {
+
+     ParsedInternalKey p1_key;
+     ParsedInternalKey p2_key;
+     ParseInternalKey(Slice(p1.data(), FULL_KEY_LENGTH), &p1_key);
+     ParseInternalKey(Slice(p2.data(), FULL_KEY_LENGTH), &p2_key);
+
+     int r = p1_key.user_key.compare(p2_key.user_key);
+     if (r == 0) {
+      if (p1_key.sequence > p2_key.sequence) {
+       r = -1;
+      } else if (p1_key.sequence < p2_key.sequence) {
+       r = +1;
+      } else if (p1_key.type > p2_key.type) {
+       r = -1;
+      } else if (p1_key.type < p2_key.type) {
+       r = +1;
+      }
+     }
+
+     return r;
+    }
+  };
+
+  typedef std::priority_queue<Slice, std::vector<Slice>, KeyComparor> entry_heap;
+
+};
+
 
 inline Slice
 EncodeDeletedKey(ParsedInternalKey &deleted_key, std::string &last_entry) {
@@ -134,16 +165,8 @@ uint64_t BaselineMerger::MergeEntries() {
  for (auto &plain_file: input_plain_files) {
   Slice current_entry;
   std::cout << plain_file->file_name << std::endl;
-  plain_file->ReadFromDisk(plain_file->file_content, 512 * 1024 * 1024ul);
-
-  entries_read_out = NextEntry(plain_file, current_entry);
-
-  if (entries_read_out == 0) {
-   // doesn't sure it will work or not
-  } else {
-   // read out at least one entry from the files
-   heap.emplace(current_entry, fid);
-  }
+  plain_file->file_size = plain_file->ReadFromDisk(plain_file->file_content,
+                                                   512 * 1024 * 1024ul);
 
  }
  auto end = std::chrono::steady_clock::now();
@@ -154,41 +177,47 @@ uint64_t BaselineMerger::MergeEntries() {
 
  std::cout << "All files loaded" << std::endl;
  start = std::chrono::steady_clock::now();
-
- // heap is built, and all files are added into the heap
- std::string result_block;
- std::string next_file_name = fileNameCreator_->NextFileName();
- PlainTable output_file(next_file_name, false);
- Slice current_entry;
- Slice next_entry;
-
- ArbitrationAction action;
- auto processed_entries = input_files.size();
- while (!heap.empty()) {
-  if (result_block.size() > BLOCK_SIZE) {
-   result_block.clear();
-  }
-  auto heap_head = heap.top();
-
-  current_entry = heap_head.first;
-  Slice result_buffer;
-
-  auto entries = NextEntry(input_plain_files[heap_head.second], next_entry);
-  processed_entries++;
-  if (processed_entries % 1000000 == 0) {
-   std::cout << "Processed Entries: " << processed_entries << std::endl;
-  }
-
-  if (entries > 0) {
-   heap.emplace(next_entry, heap_head.second);
-  }
-//  heap.emplace(next_entry, heap_head.second);
-  heap.pop();
+ for (auto file: input_plain_files) {
+  std::reverse(file->file_content.begin(), file->file_content.end());
+  std::reverse(file->file_content.begin(), file->file_content.end());
  }
 
  end = std::chrono::steady_clock::now();
  elapsed_seconds = end - start;
- std::cout << "Merge & Arbitration Time (sec): " << elapsed_seconds.count()
+ std::cout << "Format transform Time (Sec):" << elapsed_seconds.count()
+           << std::endl;
+
+ start = std::chrono::steady_clock::now();
+
+ slice_merge_heap::entry_heap merger;
+ Slice temp;
+ uint64_t added_entries = 0;
+ for (auto file: input_plain_files) {
+  uint64_t readed_len = 0;
+  while (readed_len < file->file_size) {
+   readed_len = NextEntry(file, temp);
+   merger.emplace(temp);
+   added_entries++;
+   if (added_entries % 1000000 == 0) {
+    std::cout << added_entries << std::endl;
+   }
+  }
+ }
+
+ end = std::chrono::steady_clock::now();
+ elapsed_seconds = end - start;
+ std::cout << "Merge Sort (sec): "
+           << elapsed_seconds.count()
+           << std::endl;
+ start = std::chrono::steady_clock::now();
+ while (!merger.empty()) {
+  merger.top();
+  merger.pop();
+ }
+ end = std::chrono::steady_clock::now();
+ elapsed_seconds = end - start;
+ std::cout << "Merge & Arbitration By Heap Time (sec): "
+           << elapsed_seconds.count()
            << std::endl;
 
  return 0;

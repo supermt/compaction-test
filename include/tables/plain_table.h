@@ -20,6 +20,7 @@ public:
 
   int readed_entries = 0;
   std::string file_content;
+  uint64_t file_size = 0;
 };
 
 
